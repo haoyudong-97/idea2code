@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+state.json
+progress.md
+results/
+*.log
+*.prompt
+*.done
+.env
