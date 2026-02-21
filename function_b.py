@@ -36,6 +36,11 @@ DEFAULT_TIMEOUT = 600  # 10 minutes
 WORKSPACE = Path(__file__).resolve().parent / "workspace"
 
 
+def _project_tag(project_dir: str) -> str:
+    """Derive a short project tag from the project directory name."""
+    return Path(project_dir).resolve().name.lower().replace(" ", "-")[:20]
+
+
 # ── Prompt building ──────────────────────────────────────────────────
 
 def _build_prompt(papers_path: str | None, instruction: str | None,
@@ -188,16 +193,17 @@ def run_implementation(papers_path: str | None, instruction: str | None,
                        timeout: int = DEFAULT_TIMEOUT) -> dict | None:
     """Run code implementation via a Claude Code worker in a tmux pane."""
 
+    tag = _project_tag(project_dir)
     prompt = _build_prompt(papers_path, instruction, project_dir,
                            focus_files, state_path)
 
     # Use workspace for all temp/output files (avoids /tmp space issues)
     WORKSPACE.mkdir(parents=True, exist_ok=True)
 
-    worker_out = WORKSPACE / "func_b.output"
-    prompt_file = WORKSPACE / "func_b.prompt"
-    done_marker = WORKSPACE / "func_b.done"
-    err_file = WORKSPACE / "func_b.err"
+    worker_out = WORKSPACE / f"{tag}_impl.output"
+    prompt_file = WORKSPACE / f"{tag}_impl.prompt"
+    done_marker = WORKSPACE / f"{tag}_impl.done"
+    err_file = WORKSPACE / f"{tag}_impl.err"
 
     # Clean previous run artifacts
     for f in [worker_out, done_marker, err_file]:
@@ -218,9 +224,10 @@ def run_implementation(papers_path: str | None, instruction: str | None,
 
     print(f"Implementing changes in {project_dir}...", file=sys.stderr)
 
+    win_name = f"{tag}:impl"
     if os.environ.get("TMUX"):
-        _run_in_tmux(cmd, "implement")
-        print("Worker launched in tmux window 'implement'", file=sys.stderr)
+        _run_in_tmux(cmd, win_name)
+        print(f"Worker launched in tmux window '{win_name}'", file=sys.stderr)
     else:
         subprocess.Popen(
             ["bash", "-c", cmd],

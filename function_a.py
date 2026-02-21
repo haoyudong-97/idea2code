@@ -28,6 +28,19 @@ DEFAULT_TIMEOUT = 300  # 5 minutes
 WORKSPACE = Path(__file__).resolve().parent / "workspace"
 
 
+def _project_tag(state_path: str | None) -> str:
+    """Derive a short project tag from state.json's project_dir or fallback."""
+    if state_path and Path(state_path).exists():
+        try:
+            state = json.loads(Path(state_path).read_text())
+            pdir = state.get("project_dir", "")
+            if pdir:
+                return Path(pdir).name.lower().replace(" ", "-")[:20]
+        except (json.JSONDecodeError, IOError):
+            pass
+    return "default"
+
+
 # ── Prompt building ──────────────────────────────────────────────────
 
 def _build_context(state_path: str | None) -> tuple[str, list[str]]:
@@ -188,6 +201,7 @@ def run_search(topic: str, output_path: str,
                timeout: int = DEFAULT_TIMEOUT) -> list | None:
     """Run paper search via a Claude Code worker in a tmux pane."""
 
+    tag = _project_tag(state_path)
     context, seen_papers = _build_context(state_path)
     prompt = _build_prompt(topic, context, seen_papers)
 
@@ -196,10 +210,10 @@ def run_search(topic: str, output_path: str,
     out = Path(output_path).resolve()
     out.parent.mkdir(parents=True, exist_ok=True)
 
-    prompt_file = WORKSPACE / "func_a.prompt"
-    done_marker = WORKSPACE / "func_a.done"
-    err_file = WORKSPACE / "func_a.err"
-    worker_out = WORKSPACE / "func_a.output"
+    prompt_file = WORKSPACE / f"{tag}_search.prompt"
+    done_marker = WORKSPACE / f"{tag}_search.done"
+    err_file = WORKSPACE / f"{tag}_search.err"
+    worker_out = WORKSPACE / f"{tag}_search.output"
 
     # Clean previous run artifacts
     for f in [worker_out, done_marker, err_file]:
@@ -218,9 +232,10 @@ def run_search(topic: str, output_path: str,
 
     print(f"Search topic: {topic}", file=sys.stderr)
 
+    win_name = f"{tag}:search"
     if os.environ.get("TMUX"):
-        _run_in_tmux(cmd, "search")
-        print("Worker launched in tmux window 'search'", file=sys.stderr)
+        _run_in_tmux(cmd, win_name)
+        print(f"Worker launched in tmux window '{win_name}'", file=sys.stderr)
     else:
         # Fallback: run as detached subprocess (works outside tmux)
         subprocess.Popen(
