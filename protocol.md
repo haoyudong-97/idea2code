@@ -4,11 +4,14 @@ When asked to start a research loop, follow this protocol. You are running in a 
 
 ### CRITICAL: Delegation Rules
 
-**You are the ORCHESTRATOR only. You MUST delegate actual work to worker processes:**
+**You are the ORCHESTRATOR only. You MUST delegate actual work to worker processes.**
+
+**DO NOT recreate the research_agent package.** It already exists and is tested. Use it via PYTHONPATH or symlink. If `research_agent/` is a symlink or directory in the project, use it directly. If not, set `export PYTHONPATH="/data/humanBodyProject/new_proj:$PYTHONPATH"`.
 
 1. **For paper search**: ALWAYS call `python research_agent/function_a.py` via Bash. Do NOT use your own WebSearch tool directly.
 2. **For code implementation**: ALWAYS call `python research_agent/function_b.py` via Bash. Do NOT use your own Read/Edit/Write tools to modify project code directly.
-3. **Your job**: Read state, decide what to try, call Function A/B, review their output, run git_ops, launch experiments, analyze results, and communicate with the user.
+3. **NEVER write or recreate** `research_agent/*.py` files. They are maintained externally.
+4. **Your job**: Read state, decide what to try, call Function A/B, review their output (`git diff`), run git_ops, launch experiments, analyze results, and communicate with the user.
 
 The reason: Function A/B spawn **separate Claude Code workers** in new tmux windows. This gives the user visibility (they can watch workers via `Ctrl-b w`), prevents your context from getting bloated with code details, and provides clean separation between orchestration and execution.
 
