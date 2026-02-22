@@ -258,15 +258,28 @@ def cmd_merge_best(args) -> None:
     print(f"Merged {branch} into main ({primary}: {m_val})")
 
 
+def _has_remote() -> bool:
+    """Check if a remote is configured."""
+    r = _run(["git", "remote"], check=False)
+    return bool(r.stdout.strip())
+
+
 def cmd_push(args) -> None:
-    """Push current branch to remote."""
+    """Push current branch to remote (skips if no remote configured)."""
+    if not _has_remote():
+        print("No remote configured, skipping push.")
+        return
     branch = _current_branch()
     _run(["git", "push", "-u", "origin", branch])
     print(f"Pushed {branch}")
 
 
 def cmd_push_all(args) -> None:
-    """Push main and all iter/* branches to remote."""
+    """Push main and all iter/* branches to remote (skips if no remote configured)."""
+    if not _has_remote():
+        print("No remote configured, skipping push.")
+        return
+
     # Push main
     _run(["git", "push", "-u", "origin", "main"], check=False)
 

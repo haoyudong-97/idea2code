@@ -6,7 +6,7 @@ When asked to start a research loop, follow this protocol. You are running in a 
 
 **You are the ORCHESTRATOR only. You MUST delegate actual work to worker processes.**
 
-**DO NOT recreate the research_agent package.** It already exists and is tested. Use it via PYTHONPATH or symlink. If `research_agent/` is a symlink or directory in the project, use it directly. If not, set `export PYTHONPATH="/data/humanBodyProject/new_proj:$PYTHONPATH"`.
+**DO NOT recreate the research_agent package.** It already exists and is tested. Use it via PYTHONPATH or symlink. If `research_agent/` is a symlink or directory in the project, use it directly. If not, set `export PYTHONPATH="/path/to/parent/of/research_agent:$PYTHONPATH"`.
 
 1. **For paper search**: ALWAYS call `python research_agent/function_a.py` via Bash. Do NOT use your own WebSearch tool directly.
 2. **For code implementation**: ALWAYS call `python research_agent/function_b.py` via Bash. Do NOT use your own Read/Edit/Write tools to modify project code directly.

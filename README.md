@@ -1,5 +1,9 @@
 # Research Agent
 
+> Once people said "Talk is cheap. Show me the code." But now in the era of vibe coding, I think the reverse might be true: your ability to create a new idea is far more important than being able to implement it.
+>
+> With this idea in mind, this project is created to accelerate the idea-to-real-code step.
+
 A project-agnostic autonomous research loop for Claude Code. The **orchestrator** Claude Code session runs in tmux and controls two **worker** Claude Code sessions (paper search + code implementation) that run in separate tmux windows. No API key needed — uses your Claude subscription.
 
 ---
@@ -81,10 +85,10 @@ No API key needed. Workers use `claude -p` (pipe mode) which authenticates via y
 
 ```bash
 # Option A: Copy into your project
-cp -r /data/humanBodyProject/new_proj/research_agent/ /path/to/your/project/
+cp -r research_agent/ /path/to/your/project/
 
 # Option B: PYTHONPATH (add to .bashrc for persistence)
-export PYTHONPATH="/data/humanBodyProject/new_proj:$PYTHONPATH"
+export PYTHONPATH="/path/to/parent/of/research_agent:$PYTHONPATH"
 ```
 
 ### Step 2: Append the protocol to your project's CLAUDE.md
