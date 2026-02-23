@@ -18,6 +18,7 @@ A project-agnostic autonomous research loop for Claude Code. The **orchestrator*
 - [Iteration Protocol](#iteration-protocol)
 - [CLI Reference](#cli-reference)
 - [Monitoring Progress](#monitoring-progress)
+- [How progress.md Works](#how-progressmd-works)
 - [Git Workflow](#git-workflow)
 - [State File Schema](#state-file-schema)
 - [Customization](#customization)
@@ -101,6 +102,8 @@ cat research_agent/protocol.md >> CLAUDE.md
 Edit the appended section to customize metric names, experiment scripts, and file paths.
 
 ### Step 3: Create `progress.md` in your project directory
+
+Write your research goal — the agent will automatically append a tracking section below it as it runs (see [How progress.md works](#how-progressmd-works)).
 
 ```bash
 cat > progress.md << 'EOF'
@@ -287,6 +290,86 @@ python -m research_agent.git_ops log
 # Check experiment status
 test -f checkpoints/my_exp/.done && cat checkpoints/my_exp/.done || echo RUNNING
 ```
+
+---
+
+## How progress.md Works
+
+`progress.md` is the human-readable record of your research loop. It has two sections:
+
+1. **Your goal** (top) — you write this once at setup. The agent never touches it.
+2. **Agent tracking** (bottom) — auto-generated below a sentinel line. Updated after every significant action.
+
+### Auto-update triggers
+
+The tracking section is rewritten automatically whenever `state.py` is called with:
+
+| Command | When it runs |
+|---------|-------------|
+| `state init` | Loop starts — creates the sentinel and initial status table |
+| `state set-baseline` | Baseline recorded — adds baseline metrics |
+| `state add-iteration` | Iteration completed — appends to the iteration log |
+| `state update-progress` | Manual refresh — e.g., to set a "current direction" note |
+
+### What gets tracked
+
+Below the sentinel (`<!-- AGENT PROGRESS BELOW -->`), the agent writes:
+
+- **Status table** — primary metric, baseline value, current best (with iteration number), total iterations, start time
+- **Current direction** — optional note on what the agent is trying next
+- **Baseline** — checkpoint path and all baseline metrics
+- **Iteration log** — table with every iteration: change summary, metric value, delta vs baseline, feedback
+- **Recent iterations (detail)** — last 3 iterations expanded with hypothesis, papers cited, checkpoint path, and full metrics
+
+### Example
+
+After 3 iterations, `progress.md` looks like:
+
+```markdown
+# Research Goal
+
+Improve heart segmentation 3D Dice above 0.92.
+
+<!-- AGENT PROGRESS BELOW — auto-updated, do not edit below this line -->
+
+## Status
+
+| | |
+|---|---|
+| **Primary metric** | `test_3d_dice` |
+| **Baseline** | 0.905 |
+| **Best** | 0.918 (iter 3) |
+| **Iterations** | 3 |
+| **Started** | 2026-02-20 10:00:00 |
+
+> **Current direction:** Combining token-wise FiLM with increased bias scale
+
+## Baseline
+- Checkpoint: `checkpoints/baseline`
+- test_3d_dice: **0.905**
+
+## Iteration Log
+
+| # | Change | test_3d_dice | vs baseline | Feedback |
+|---|--------|---|------------|----------|
+| 1 | spd_rank 4->8 | 0.908 | +0.0030 | marginal gain |
+| 2 | enable tokenwise FiLM | 0.912 | +0.0070 | promising |
+| 3 | bias_max_scale 0.05->0.1 | 0.918 | +0.0130 | new best |
+
+## Recent Iterations (detail)
+
+### Iteration 3 — 2026-02-20 14:30:00
+- **Hypothesis:** Larger bias scale allows more adaptation capacity
+- **Change:** bias_max_scale 0.05->0.1
+- **Papers:** Nullspace Tuning 2024
+- **Checkpoint:** `checkpoints/exp3`
+- **Metrics:** {"test_3d_dice": 0.918, "test_3d_nsd": 0.952}
+- **Feedback:** new best
+
+*Last updated: 2026-02-20 14:35:00*
+```
+
+The user can `cat progress.md` at any time (or view it in a file browser) to see the full state of the research loop without needing to parse JSON or run commands.
 
 ---
 
