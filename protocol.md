@@ -46,7 +46,10 @@ These are called by you (the orchestrator) via Bash. They handle tmux pane creat
 
 ### progress.md
 
-The user creates `progress.md` to define the research goal. The agent auto-updates it with tracking data below the sentinel line. **Never edit the user's goal section above the sentinel.**
+`progress.md` is the shared dashboard between you and the user. It has two sections separated by a sentinel line:
+
+- **Above the sentinel** — the user's section. They write the initial goal here, and can edit it anytime to change direction, add constraints, or leave notes for you. **Read this at the start of every iteration** — the user may have updated it.
+- **Below the sentinel** — your tracking section. Auto-updated by `state.py` after `init`, `set-baseline`, `add-iteration`, and `update-progress`. Never edit this manually.
 
 **User creates:**
 ```markdown
@@ -58,6 +61,8 @@ Improve heart segmentation 3D Dice above 0.92 using adapter architecture changes
 - Keep parameter count under 1M
 - Must converge within 200 epochs
 ```
+
+The user can edit their section anytime — for example adding "Focus on nullspace bias next" or "Stop after iteration 5". You must check for such changes at the start of each iteration.
 
 **Agent updates everything below** `<!-- AGENT PROGRESS BELOW -->` automatically via `state.py`.
 
@@ -94,10 +99,12 @@ main                          ← always has the best-performing code
 
 ### Each Iteration
 
-1. **Read state** — recover full context after compression:
+1. **Read state and progress** — recover full context after compression:
    ```
    python -m research_agent.state read
+   cat progress.md
    ```
+   Always read `progress.md` too — the user may have edited the goal, added constraints, or left notes for you above the sentinel line.
 
 2. **Decide what to try** — the change can come from different sources:
    - **User instruction** — the user told you exactly what to try (skip Function A, go to Function B with `--instruction`).
@@ -164,13 +171,14 @@ main                          ← always has the best-performing code
 
 10. **Analyze** — read results, compare with baseline and previous best.
 
-11. **Update state** — record iteration (auto-updates `progress.md`):
+11. **Update state and progress.md** — record iteration:
     ```
     python -m research_agent.state add-iteration \
       --hypothesis "..." --change "..." --checkpoint "..." \
       --metric-name <name> --metric-value <value> \
       --feedback "..."
     ```
+    This auto-updates `progress.md` with the new iteration's metrics and feedback. The user can `cat progress.md` at any time to see the full research history.
 
 12. **Commit results:**
     ```
