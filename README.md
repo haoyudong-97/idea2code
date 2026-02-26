@@ -79,6 +79,24 @@ tmux session "research"
 
 No API key needed. Workers use `claude -p` (pipe mode) which authenticates via your Claude subscription.
 
+## Project Structure
+
+```
+your_project/
+├── CLAUDE.md                    # Protocol instructions for Claude (appended from protocol.md)
+├── progress.md                  # Your goal + auto-updated tracking dashboard
+├── state.json                   # Machine-readable state (created at runtime)
+└── research_agent/
+    ├── idea_discovery.py        # Fetch recent papers, digest trends, propose ideas
+    ├── literature_search.py     # Paper search via Claude worker in tmux
+    ├── code_implementation.py   # Code changes via Claude worker in tmux
+    ├── search_papers.py         # Fallback paper search (Semantic Scholar + arXiv APIs)
+    ├── state.py                 # State management + progress.md auto-updates
+    ├── git_ops.py               # Git branching, commits, merges per iteration
+    ├── run_and_wait.sh          # Experiment runner with completion markers
+    └── protocol.md              # Source protocol (append to your CLAUDE.md)
+```
+
 ---
 
 ## Activation (Step-by-Step)

@@ -86,6 +86,7 @@ def fetch_arxiv_rss(categories: str, days: int = 3) -> list[dict]:
 
     # If user wants more than 1 day, supplement with arXiv API search
     if days > 1:
+        time.sleep(3)  # arXiv requests ≥3s between API calls
         api_papers = _fetch_arxiv_api(categories, days)
         papers.extend(api_papers)
 
@@ -166,7 +167,7 @@ def _fetch_arxiv_api(categories: str, days: int) -> list[dict]:
         "sortBy": "submittedDate",
         "sortOrder": "descending",
     }
-    url = f"http://export.arxiv.org/api/query?{urllib.parse.urlencode(params)}"
+    url = f"https://export.arxiv.org/api/query?{urllib.parse.urlencode(params)}"
     print(f"  Fetching arXiv API (last {days} days)...", file=sys.stderr)
 
     req = urllib.request.Request(url, headers={"User-Agent": "research-agent/1.0"})
