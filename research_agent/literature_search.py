@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Literature search via Claude Code worker in a tmux pane.
+"""Literature search via Claude Code worker.
 
-Launches `claude -p` in a separate tmux window to perform web searches
+Launches `claude -p` as a background process to perform web searches
 for relevant papers. Uses the user's Claude subscription (no API key needed).
 
 Usage:
@@ -15,7 +15,6 @@ feedback in state.json.
 
 import argparse
 import json
-import os
 import re
 import shlex
 import subprocess
@@ -188,18 +187,10 @@ def _extract_json_array(text: str) -> list | None:
     return None
 
 
-def _run_in_tmux(cmd: str, window_name: str) -> None:
-    """Launch a bash command in a new detached tmux window."""
-    subprocess.run(
-        ["tmux", "new-window", "-d", "-n", window_name, "bash", "-c", cmd],
-        check=True,
-    )
-
-
 def run_search(topic: str, output_path: str,
                state_path: str | None = None,
                timeout: int = DEFAULT_TIMEOUT) -> list | None:
-    """Run paper search via a Claude Code worker in a tmux pane."""
+    """Run paper search via a Claude Code background worker."""
 
     tag = _project_tag(state_path)
     context, seen_papers = _build_context(state_path)
@@ -232,19 +223,13 @@ def run_search(topic: str, output_path: str,
 
     print(f"Search topic: {topic}", file=sys.stderr)
 
-    win_name = f"{tag}:search"
-    if os.environ.get("TMUX"):
-        _run_in_tmux(cmd, win_name)
-        print(f"Worker launched in tmux window '{win_name}'", file=sys.stderr)
-    else:
-        # Fallback: run as detached subprocess (works outside tmux)
-        subprocess.Popen(
-            ["bash", "-c", cmd],
-            start_new_session=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        print("Worker launched as background process", file=sys.stderr)
+    subprocess.Popen(
+        ["bash", "-c", cmd],
+        start_new_session=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    print("Worker launched as background process", file=sys.stderr)
 
     # Poll for completion
     start = time.time()

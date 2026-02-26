@@ -26,7 +26,6 @@ Output:
 
 import argparse
 import json
-import os
 import re
 import shlex
 import subprocess
@@ -472,14 +471,6 @@ def _project_tag(state_path: str | None) -> str:
     return "default"
 
 
-def _run_in_tmux(cmd: str, window_name: str) -> None:
-    """Launch a bash command in a new detached tmux window."""
-    subprocess.run(
-        ["tmux", "new-window", "-d", "-n", window_name, "bash", "-c", cmd],
-        check=True,
-    )
-
-
 def generate_ideas(papers: list[dict], goal: str,
                    iteration_context: str,
                    output_path: str,
@@ -513,18 +504,13 @@ def generate_ideas(papers: list[dict], goal: str,
 
     print("Launching idea generation worker...", file=sys.stderr)
 
-    win_name = f"{tag}:ideas"
-    if os.environ.get("TMUX"):
-        _run_in_tmux(cmd, win_name)
-        print(f"Worker launched in tmux window '{win_name}'", file=sys.stderr)
-    else:
-        subprocess.Popen(
-            ["bash", "-c", cmd],
-            start_new_session=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        print("Worker launched as background process", file=sys.stderr)
+    subprocess.Popen(
+        ["bash", "-c", cmd],
+        start_new_session=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    print("Worker launched as background process", file=sys.stderr)
 
     # Poll for completion
     start_time = time.time()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Code implementation via Claude Code worker in a tmux pane.
+"""Code implementation via Claude Code worker.
 
-Launches `claude -p` in a separate tmux window to implement code changes.
+Launches `claude -p` as a background process to implement code changes.
 The worker Claude Code reads, edits, and creates files directly in the project.
 Uses the user's Claude subscription (no API key needed).
 
@@ -23,7 +23,6 @@ Output:
 
 import argparse
 import json
-import os
 import re
 import shlex
 import subprocess
@@ -179,19 +178,11 @@ def _extract_summary(text: str) -> dict:
     }
 
 
-def _run_in_tmux(cmd: str, window_name: str) -> None:
-    """Launch a bash command in a new detached tmux window."""
-    subprocess.run(
-        ["tmux", "new-window", "-d", "-n", window_name, "bash", "-c", cmd],
-        check=True,
-    )
-
-
 def run_implementation(papers_path: str | None, instruction: str | None,
                        project_dir: str, focus_files: list[str] | None,
                        state_path: str | None,
                        timeout: int = DEFAULT_TIMEOUT) -> dict | None:
-    """Run code implementation via a Claude Code worker in a tmux pane."""
+    """Run code implementation via a Claude Code background worker."""
 
     tag = _project_tag(project_dir)
     prompt = _build_prompt(papers_path, instruction, project_dir,
@@ -224,18 +215,13 @@ def run_implementation(papers_path: str | None, instruction: str | None,
 
     print(f"Implementing changes in {project_dir}...", file=sys.stderr)
 
-    win_name = f"{tag}:impl"
-    if os.environ.get("TMUX"):
-        _run_in_tmux(cmd, win_name)
-        print(f"Worker launched in tmux window '{win_name}'", file=sys.stderr)
-    else:
-        subprocess.Popen(
-            ["bash", "-c", cmd],
-            start_new_session=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        print("Worker launched as background process", file=sys.stderr)
+    subprocess.Popen(
+        ["bash", "-c", cmd],
+        start_new_session=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    print("Worker launched as background process", file=sys.stderr)
 
     # Poll for completion
     start = time.time()
