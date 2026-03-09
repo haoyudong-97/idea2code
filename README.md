@@ -36,7 +36,7 @@ That's it. The agent fetches papers, selects an approach, implements code, runs 
 /auto-research improve segmentation accuracy using attention-based boundary refinement
 ```
 
-The full pipeline runs automatically:
+Each call runs the full pipeline automatically:
 
 1. **Load context** — reads `state.json` and `progress.md` for goal, baseline, iteration history
 2. **Fetch papers** — searches arXiv RSS + API and Semantic Scholar for relevant papers
@@ -49,7 +49,58 @@ The full pipeline runs automatically:
 9. **Analyze results** — extracts metrics, compares to baseline and previous best
 10. **Record results** — `complete-iteration` (or `fail-iteration`), updates `progress.md`
 11. **Commit results + merge** — commits results, merges to main if new best, pushes
-12. **Present summary** — hypothesis, changes, metrics, verdict, suggestion for next iteration
+12. **Present summary** — full history of all iterations, verdict, suggestion for next iteration
+
+### Iterating
+
+Call `/auto-research` repeatedly with new ideas. Each call picks up where the last left off:
+
+```
+/auto-research add residual attention to nnunet decoder
+```
+```
+## Iteration 1 Result
+  test_3d_dice: 0.88 (baseline: 0.85, delta: +0.030)
+  Verdict: NEW BEST
+
+## All Iterations
+| # | Change                              | test_3d_dice | vs baseline |
+|---|-------------------------------------|--------------|-------------|
+| 1 | add residual attention to decoder   | 0.88         | +0.030      |
+```
+
+```
+/auto-research increase batch size from 2 to 4
+```
+```
+## Iteration 2 Result
+  test_3d_dice: 0.89 (baseline: 0.85, delta: +0.040)
+  Verdict: NEW BEST
+
+## All Iterations
+| # | Change                              | test_3d_dice | vs baseline |
+|---|-------------------------------------|--------------|-------------|
+| 1 | add residual attention to decoder   | 0.88         | +0.030      |
+| 2 | increase batch size from 2 to 4     | 0.89         | +0.040      |
+```
+
+```
+/auto-research combine attention with deeper supervision
+```
+```
+## Iteration 3 Result
+  test_3d_dice: 0.87 (baseline: 0.85, delta: +0.020)
+  Verdict: REGRESSED (best is still iter 2: 0.89)
+
+## All Iterations
+| # | Change                              | test_3d_dice | vs baseline |
+|---|-------------------------------------|--------------|-------------|
+| 1 | add residual attention to decoder   | 0.88         | +0.030      |
+| 2 | increase batch size from 2 to 4     | 0.89         | +0.040      |
+| 3 | combine attention + deep supervision| 0.87         | +0.020      |
+```
+
+State accumulates across calls — each new `/auto-research` sees the full history (baseline, best result, all previous iterations) and uses it to select better approaches and avoid repeating what didn't work.
 
 ---
 
