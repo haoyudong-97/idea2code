@@ -4,32 +4,35 @@ When asked to start a research loop, follow this protocol. You are running in a 
 
 ### CRITICAL: Delegation Rules
 
-**You are the ORCHESTRATOR only. You MUST delegate actual work to worker processes.**
+**You are the ORCHESTRATOR only. You MUST delegate actual work to Agent subagents.**
 
 **DO NOT recreate the research_agent package.** It already exists and is tested. Use it via PYTHONPATH or symlink. If `research_agent/` is a symlink or directory in the project, use it directly. If not, set `export PYTHONPATH="/path/to/parent/of/research_agent:$PYTHONPATH"`.
 
-1. **For paper search**: ALWAYS call `python research_agent/literature_search.py` via Bash. Do NOT use your own WebSearch tool directly.
-2. **For code implementation**: ALWAYS call `python research_agent/code_implementation.py` via Bash. Do NOT use your own Read/Edit/Write tools to modify project code directly.
-3. **NEVER write or recreate** `research_agent/*.py` files. They are maintained externally.
-4. **Your job**: Read state, decide what to try, call literature search / code implementation, review their output (`git diff`), run git_ops, launch experiments, analyze results, and communicate with the user.
+1. **For paper fetching**: Use pure Python scripts (`idea_discovery.py --fetch-only`, `search_papers.py`) via Bash. These call arXiv/Semantic Scholar APIs directly — no Claude needed.
+2. **For idea generation**: Use the **Agent tool** to spawn a subagent that digests fetched papers and proposes ideas.
+3. **For code implementation**: Use the **Agent tool** to spawn a subagent that reads code, plans edits, and modifies files.
+4. **NEVER call `code_implementation.py` or `literature_search.py`** — they are archived. They spawn `claude -p` which fails inside Claude Code.
+5. **NEVER write or recreate** `research_agent/*.py` files. They are maintained externally.
+6. **Your job**: Read state, decide what to try, call paper fetching scripts, spawn Agent subagents for reasoning/coding, review their output (`git diff`), run git_ops, launch experiments, analyze results, and communicate with the user.
 
-The reason: literature search and code implementation spawn **separate Claude Code workers** as background processes. This prevents your context from getting bloated with code details and provides clean separation between orchestration and execution.
+The reason: Agent subagents are Claude Code's native mechanism for delegating work. They have full tool access (Read/Edit/Write/Bash/Grep/Glob) without nesting issues. Pure Python scripts handle API calls that don't need Claude.
 
 ### Architecture
 
-You (the orchestrator) run in tmux **window 0**. Worker Claude Code sessions run as **background processes** — they are independent processes that can read/edit/search without nesting issues.
+You (the orchestrator) run in tmux **window 0**. Work is delegated to **Agent subagents** (Claude Code's native mechanism) and **pure Python scripts**.
 
 ```
 tmux session "research"
   └── window 0: You (orchestrator) — controls the loop, reads results
 
-Background workers (launched automatically):
-  - claude -p for literature search (paper search)
-  - claude -p for code implementation (code changes)
-  - claude -p for idea discovery (trend digest)
+Delegation:
+  - Paper fetching: pure Python (idea_discovery.py --fetch-only, search_papers.py)
+  - Idea generation: Agent subagent (reads fetched papers, proposes ideas)
+  - Code implementation: Agent subagent (reads code, makes edits)
+  - State/git: pure Python (state.py, git_ops.py)
 ```
 
-Workers are launched automatically by the Python scripts as background processes. No API key needed — everything uses your Claude subscription.
+Agent subagents are spawned via the Agent tool and have full tool access. Pure Python scripts handle API calls that don't need Claude.
 
 ### Operating Modes
 
@@ -42,11 +45,13 @@ The user can switch modes at any time by saying "continue autonomously" or "wait
 
 ### Core Functions
 
-- **Idea Discovery** (`idea_discovery.py`): Fetches recent papers from arXiv RSS + Semantic Scholar, sends them to a Claude worker that digests trends and proposes research ideas. Use this when the user asks to explore what's new in their field or needs fresh inspiration.
-- **Literature Search** (`literature_search.py`): Spawns a Claude Code worker as a background process → uses WebSearch to find papers → returns ranked JSON.
-- **Code Implementation** (`code_implementation.py`): Spawns a Claude Code worker as a background process → reads code, plans edits, modifies files → returns change summary JSON.
+- **Paper Fetching** (`idea_discovery.py --fetch-only`, `search_papers.py`): Pure Python scripts that fetch papers from arXiv RSS + API and Semantic Scholar. No Claude needed — always safe to call.
+- **Idea Generation** (Agent subagent): Spawned via the Agent tool. Reads fetched papers from `results/recent_papers.json`, digests trends, proposes 3-5 research ideas. Writes to `results/ideas.json`.
+- **Code Implementation** (Agent subagent): Spawned via the Agent tool. Reads code, plans edits, modifies files directly. Writes summary to `results/impl_summary.json`.
 
-These are called by you (the orchestrator) via Bash. They handle tmux pane creation and polling internally.
+Paper fetching is called via Bash. Idea generation and code implementation use the **Agent tool** (not `claude -p` workers).
+
+> **Archived:** `literature_search.py` and `code_implementation.py` are in `research_agent/archive/`. They spawn `claude -p` which fails inside Claude Code. Do not use them.
 
 ### Idea Discovery Flow
 
@@ -133,19 +138,19 @@ main                          ← always has the best-performing code
    - **New technique needed** — call literature search first.
    - **Explore recent work** — if the user asks to see what's new, or after 3+ plateaued iterations, run idea discovery first.
 
-3. **(Optional) Literature search:**
+3. **(Optional) Paper search:**
    ```
-   python research_agent/literature_search.py "orthogonal adapter fine-tuning" \
-     results/search_iter3.json --state state.json
+   python research_agent/idea_discovery.py --categories cs.CV,eess.IV --days 7 \
+     --s2-query "orthogonal adapter fine-tuning" --fetch-only \
+     --papers-output results/recent_papers.json
    ```
-   Or auto-generate the topic from the last iteration:
+   Or use the fallback:
    ```
-   python research_agent/literature_search.py --auto results/search_iter3.json --state state.json
+   python research_agent/search_papers.py "orthogonal adapter fine-tuning" \
+     results/search_iter3.json --limit 15
    ```
-   - Spawns a Claude Code worker as a background process.
-   - Worker uses WebSearch to find papers, returns ranked JSON.
-   - Auto-deduplicates against papers already used in previous iterations.
-   - Script polls for completion and returns results.
+   - Pure Python — calls arXiv/Semantic Scholar APIs directly.
+   - No Claude needed, always safe.
    - Skip when the user gives a specific instruction or the next step is obvious.
 
 4. **Create branch** (BEFORE implementing changes):
@@ -161,20 +166,21 @@ main                          ← always has the best-performing code
    ```
    This creates the iteration in `coding` status. The user can see it in the Active Experiments section of `progress.md`.
 
-6. **Code implementation — implement the change:**
-   ```
-   # From papers:
-   python research_agent/code_implementation.py --papers results/search_iter3.json \
-     --project-dir . --state state.json \
-     --files models/sam/modeling/common.py
+6. **Code implementation — implement the change via Agent tool:**
 
-   # Or from direct instruction:
-   python research_agent/code_implementation.py --instruction "increase spd_rank to 8" \
-     --project-dir . --state state.json
-   ```
-   - Spawns a Claude Code worker as a background process.
-   - Worker reads code, plans edits, modifies files directly.
-   - Returns JSON summary: `{hypothesis, change_summary, files_modified, papers_used}`.
+   Use the **Agent tool** to spawn a subagent with a detailed prompt including:
+   - The instruction (what to change)
+   - Project context (goal, baseline, best, last iteration)
+   - Key files to focus on
+   - Papers referenced (if any)
+   - Requirement to write summary to `results/impl_summary.json`
+
+   The Agent subagent has full tool access (Read/Edit/Write/Bash/Grep/Glob) and will:
+   - Read relevant code files to understand the current implementation
+   - Implement one focused change
+   - Write a summary JSON: `{hypothesis, change_summary, files_modified, papers_used}`
+
+   **NEVER call `code_implementation.py`** — it is archived.
 
 7. **Review changes** — read what code implementation modified, verify correctness:
    ```
@@ -305,8 +311,9 @@ All commands run via `python -m research_agent.git_ops <command>`:
 
 ### Rules
 
-- **NEVER implement code changes yourself** — ALWAYS use `python research_agent/code_implementation.py` via Bash. This spawns a worker as a background process.
-- **NEVER search for papers yourself** — ALWAYS use `python research_agent/literature_search.py` via Bash. This spawns a worker as a background process.
+- **NEVER implement code changes yourself** — ALWAYS use the **Agent tool** to spawn a subagent for code implementation.
+- **NEVER call `code_implementation.py` or `literature_search.py`** — they are archived. They spawn `claude -p` which fails inside Claude Code.
+- **For paper fetching** — use `idea_discovery.py --fetch-only` or `search_papers.py` (pure Python, always safe).
 - **ONE principal change per iteration** — isolate variables for clean comparison.
 - **NEVER overwrite previous checkpoints** — each iteration gets a unique checkpoint directory.
 - **ALWAYS create branch + commit before running experiments** — code changes must be in git before any long-running job starts.

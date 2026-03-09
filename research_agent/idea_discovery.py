@@ -26,6 +26,7 @@ Output:
 
 import argparse
 import json
+import os
 import re
 import shlex
 import subprocess
@@ -504,11 +505,13 @@ def generate_ideas(papers: list[dict], goal: str,
 
     print("Launching idea generation worker...", file=sys.stderr)
 
+    clean_env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
     subprocess.Popen(
         ["bash", "-c", cmd],
         start_new_session=True,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
+        env=clean_env,
     )
     print("Worker launched as background process", file=sys.stderr)
 
