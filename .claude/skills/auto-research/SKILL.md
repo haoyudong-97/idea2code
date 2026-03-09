@@ -325,38 +325,45 @@ Once `.done` exists:
 
 ## Step 10: Present Results Summary
 
-Present a clear summary to the user:
+### 10a: This iteration's result
 
-### On success:
+On success:
 ```
-## Results: Iteration <N>
+## Iteration <N> Result
 
 **Idea:** <SELECTED_IDEA_TITLE>
 **Hypothesis:** <HYPOTHESIS>
-**Papers:** <PAPERS_USED>
-
-**Changes:** <CHANGE_DESC>
-- Files modified: <FILES>
-
-**Results:**
-- <PRIMARY_METRIC>: <VALUE> (baseline: <BASELINE>, delta: <DELTA>)
-- <SECONDARY_METRICS if any>
-
-**Verdict:** <NEW_BEST / IMPROVED / NO_IMPROVEMENT / REGRESSED>
-
-**Suggestion for next iteration:** <based on what you learned>
+**Changes:** <CHANGE_DESC> (files: <FILES>)
+**Result:** <PRIMARY_METRIC>: <VALUE> (baseline: <BASELINE>, delta: <DELTA>)
+**Verdict:** NEW_BEST / IMPROVED / NO_IMPROVEMENT / REGRESSED
 ```
 
-### On failure:
+On failure:
 ```
-## Results: Iteration <N> — FAILED
+## Iteration <N> — FAILED
 
 **Idea:** <SELECTED_IDEA_TITLE>
-**Hypothesis:** <HYPOTHESIS>
 **Error:** <what went wrong>
-
 **Suggestion:** <how to fix or what to try instead>
 ```
+
+### 10b: Full research history
+
+Always show the full history of ALL iterations so the user can see overall progress:
+
+```bash
+python -m research_agent.state report
+```
+
+This outputs a markdown table with every iteration: hypothesis, change, metric value, and feedback. Present it directly to the user.
+
+### 10c: Suggest next direction
+
+Based on the full history, suggest what to try next:
+- **Improved?** → variant of same approach, or combine with another winner
+- **Regressed?** → revert direction, try something orthogonal
+- **Plateaued (3+ iters)?** → suggest fresh literature search
+- **Goal reached?** → congratulate, suggest refinement or stopping
 
 ---
 

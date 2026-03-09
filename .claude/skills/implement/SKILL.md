@@ -124,12 +124,23 @@ python -m research_agent.git_ops push
 
 ## Step 9: Present Results Summary
 
-Present to the user:
+### This iteration:
 - **Hypothesis**: what you expected
 - **Changes**: files modified + summary
 - **Results**: primary metric value, delta vs baseline, delta vs previous best
 - **Verdict**: NEW_BEST / IMPROVED / NO_IMPROVEMENT / REGRESSED / FAILED
-- **Suggestion**: what to try next based on results
+
+### Full research history:
+```bash
+python -m research_agent.state report
+```
+Present the full report to the user — shows all iterations with metrics in a table.
+
+### Suggest next direction:
+- **Improved?** → variant of same approach, or combine with another winner
+- **Regressed?** → revert direction, try something orthogonal
+- **Plateaued (3+ iters)?** → suggest fresh literature search
+- **Goal reached?** → congratulate, suggest refinement or stopping
 
 ## Notes
 
