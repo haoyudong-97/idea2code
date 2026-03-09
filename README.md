@@ -4,19 +4,20 @@
 >
 > With this idea in mind, this project is created to accelerate the idea-to-real-code step.
 
-A project-agnostic autonomous research loop for Claude Code. Give one idea, get implemented code.
+A project-agnostic autonomous research loop for Claude Code. Give one idea, get a results summary.
 
 ```
 /auto-research <your idea here>
 ```
 
-That's it. The agent fetches papers, selects an approach, implements code changes, and presents you with a diff to review.
+That's it. The agent fetches papers, selects an approach, implements code, runs the experiment, and presents you with a full results summary.
 
 ---
 
 ## Table of Contents
 
 - [Quick Start](#quick-start)
+- [Pipeline Steps (Detail)](#pipeline-steps-detail)
 - [Installation](#installation)
 - [Skills (Slash Commands)](#skills-slash-commands)
 - [Architecture](#architecture)
@@ -35,12 +36,152 @@ That's it. The agent fetches papers, selects an approach, implements code change
 /auto-research improve segmentation accuracy using attention-based boundary refinement
 ```
 
-The pipeline runs automatically:
-1. Fetches relevant papers from arXiv + Semantic Scholar
-2. Generates research ideas aligned with your goal
-3. Selects the best approach
-4. Implements code changes via an Agent subagent
-5. Presents the diff for your review
+The full pipeline runs automatically:
+
+1. **Load context** — reads `state.json` and `progress.md` for goal, baseline, iteration history
+2. **Fetch papers** — searches arXiv RSS + API and Semantic Scholar for relevant papers
+3. **Generate ideas** — Agent subagent digests papers and proposes 3-5 research ideas
+4. **Select approach** — picks the best idea based on relevance, feasibility, and novelty
+5. **Git setup** — creates iteration branch, registers iteration in state (`coding` status)
+6. **Implement code** — Agent subagent reads codebase and makes surgical edits
+7. **Review + commit code** — shows diff, commits code changes, pushes
+8. **Run experiment** — launches training via `run_and_wait.sh`, polls for completion
+9. **Analyze results** — extracts metrics, compares to baseline and previous best
+10. **Record results** — `complete-iteration` (or `fail-iteration`), updates `progress.md`
+11. **Commit results + merge** — commits results, merges to main if new best, pushes
+12. **Present summary** — hypothesis, changes, metrics, verdict, suggestion for next iteration
+
+---
+
+## Pipeline Steps (Detail)
+
+Here's exactly what `/auto-research <idea>` does under the hood:
+
+### Step 0: Load Context
+
+Reads `state.json` (goal, baseline, best result, iteration history) and `progress.md` (user's goal and constraints). If no state exists, initializes one from the idea.
+
+```bash
+python -m research_agent.state read    # recover full context
+head -30 progress.md                   # check user's notes
+```
+
+### Step 1: Fetch Papers
+
+Calls arXiv RSS + API and Semantic Scholar to find relevant papers. Pure Python — no Claude needed, always works.
+
+```bash
+python research_agent/idea_discovery.py \
+  --categories <inferred> --days 7 --s2-query "<idea>" \
+  --fetch-only --papers-output results/recent_papers.json
+```
+
+Fallback: `search_papers.py "<idea>" results/recent_papers.json --limit 15`
+
+### Step 2: Generate Ideas + Select Approach
+
+**2a.** An Agent subagent reads the fetched papers and proposes 3-5 concrete research ideas with hypothesis, approach, expected impact, and difficulty. Output: `results/ideas.json`.
+
+**2b.** The orchestrator selects ONE idea based on relevance, feasibility, novelty (vs previous iterations), and concreteness. Tells the user which approach and why.
+
+### Step 3: Git Setup + Register Iteration
+
+Creates a dedicated branch and registers the iteration in state:
+
+```bash
+python -m research_agent.git_ops branch-start --iteration <N> --change "<description>"
+python -m research_agent.state start-iteration --hypothesis "..." --change "..."
+```
+
+State moves to `coding` status. Shows in `progress.md` Active Experiments.
+
+### Step 4: Implement Code
+
+An Agent subagent receives a detailed prompt with the instruction, project context, papers, and key files. It reads the codebase, makes surgical edits, and writes a summary to `results/impl_summary.json`.
+
+### Step 5: Review + Commit Code
+
+Shows `git diff` and briefly explains what changed. Then commits and pushes:
+
+```bash
+python -m research_agent.git_ops commit-code --iteration <N> \
+  --hypothesis "..." --change "..." --papers "..."
+python -m research_agent.git_ops push
+```
+
+### Step 6: Discover Experiment Script
+
+Finds the training script to run by checking (in order):
+1. `progress.md` — look for script path or "How to run" section
+2. `state.json` — checkpoint path patterns from previous iterations
+3. File search — `train*.sh`, `train*.py`, `scripts/` directory
+4. Ask the user if not found
+
+### Step 7: Run Experiment
+
+Marks iteration as running and launches the experiment in background:
+
+```bash
+python -m research_agent.state launch-iteration --id <N> --checkpoint "checkpoints/iter_<N>"
+bash research_agent/run_and_wait.sh <script> checkpoints/iter_<N>
+```
+
+Polls `checkpoints/iter_<N>/.done` for completion. State moves to `running` status.
+
+### Step 8: Analyze Results
+
+Reads the exit code from `.done` and extracts metrics from checkpoint dir / training log.
+
+- **Success:** extracts primary metric value + secondary metrics
+- **Failure:** reads `training.log` tail for error diagnosis
+
+### Step 9: Record Results
+
+Updates state and `progress.md`:
+
+```bash
+# On success:
+python -m research_agent.state complete-iteration --id <N> \
+  --metric-name <metric> --metric-value <value> --feedback "..."
+
+# On failure:
+python -m research_agent.state fail-iteration --id <N> --feedback "<error>"
+```
+
+### Step 10: Commit Results + Merge
+
+```bash
+python -m research_agent.git_ops commit-results --iteration <N> --state state.json
+python -m research_agent.git_ops push
+```
+
+If this iteration is the new best:
+```bash
+python -m research_agent.git_ops merge-best --state state.json
+python -m research_agent.git_ops push
+```
+
+### Step 11: Present Results Summary
+
+```
+## Results: Iteration <N>
+
+Idea: <title>
+Hypothesis: <what we expected>
+Papers: <cited papers>
+
+Changes: <description>
+  Files modified: model.py, config.py
+
+Results:
+  test_3d_dice: 0.918 (baseline: 0.905, delta: +0.013)
+
+Verdict: NEW BEST
+
+Suggestion: Try combining this with token-wise adaptation
+```
+
+---
 
 ## Installation
 
@@ -97,9 +238,9 @@ claude
 
 ## Skills (Slash Commands)
 
-### `/auto-research <idea>` — End-to-End Pipeline
+### `/auto-research <idea>` — Full Research Cycle
 
-The main command. Takes a rough idea and delivers implemented code.
+The main command. Takes a rough idea and delivers a results summary.
 
 ```
 /auto-research use boundary-aware loss to improve segmentation edges
@@ -107,7 +248,25 @@ The main command. Takes a rough idea and delivers implemented code.
 /auto-research explore attention gating for skip connections
 ```
 
-**Pipeline:** fetch papers (Python) → generate ideas (Agent subagent) → select approach (orchestrator) → implement code (Agent subagent) → present diff
+**Full pipeline:**
+
+| Step | What happens | How |
+|------|-------------|-----|
+| 0. Load context | Read `state.json` + `progress.md` | `python -m research_agent.state read` |
+| 1. Fetch papers | Search arXiv + Semantic Scholar | `idea_discovery.py --fetch-only` (pure Python) |
+| 2a. Generate ideas | Digest papers, propose ideas | Agent subagent → `results/ideas.json` |
+| 2b. Select approach | Pick best idea | Orchestrator judgment |
+| 3. Git setup | Create branch, register iteration | `git_ops branch-start` + `state start-iteration` |
+| 4. Implement code | Read code, make edits | Agent subagent → `results/impl_summary.json` |
+| 5. Review + commit | `git diff`, commit, push | `git_ops commit-code` + `git_ops push` |
+| 6. Discover script | Find experiment/training script | Check progress.md, state, or ask user |
+| 7. Run experiment | Launch training, poll | `state launch-iteration` + `run_and_wait.sh` |
+| 8. Analyze results | Extract metrics from output | Read checkpoint dir / training log |
+| 9. Record results | Update state + progress.md | `state complete-iteration` or `fail-iteration` |
+| 10. Commit + merge | Commit results, merge if best | `git_ops commit-results` + `merge-best` |
+| 11. Present summary | Show metrics, verdict, next steps | Orchestrator output |
+
+**Fallback chain:** If paper fetching fails, degrades gracefully (idea_discovery → search_papers → WebSearch → raw idea). Implementation always uses the Agent tool.
 
 ### `/find-papers <topic>` — Search Literature
 
@@ -119,15 +278,19 @@ Search for papers and generate research ideas.
 /find-papers PEFT adapters --categories machine-learning --fetch-only
 ```
 
-### `/implement <instruction>` — Code Changes
+**Steps:** fetch papers (pure Python) → present to user → generate ideas (Agent subagent) → offer to implement
 
-Implement a specific code change.
+### `/implement <instruction>` — Full Implementation Cycle
+
+Implement a specific code change and run the experiment.
 
 ```
 /implement increase spd_rank from 4 to 8
 /implement add dropout after the adapter layer
 /implement apply idea 3 from the last paper search
 ```
+
+**Steps:** parse instruction → git branch → implement (Agent subagent) → commit → run experiment → analyze → record results → present summary
 
 ### `/combine-findings <input>` — Integrate New Input
 
@@ -138,6 +301,11 @@ Combine a paper, idea, or literature search with current research state.
 /combine-findings try orthogonal regularization on adapter weights
 /combine-findings find related literature
 ```
+
+**Input types:**
+- **Paper URL** — fetches paper, extracts key ideas, proposes hypothesis
+- **Rough idea** — formulates hypothesis combining idea with current state
+- **"find related literature"** — searches for papers, user picks, then implements
 
 ---
 
@@ -314,3 +482,4 @@ export RESEARCH_PROGRESS_FILE=my_progress.md
 7. **Never edit the user's goal** in `progress.md`
 8. **Cite papers** when techniques come from literature
 9. **NEVER call archived scripts** (`code_implementation.py`, `literature_search.py`) — use Agent tool instead
+10. **Final output is always a results summary** — not just a diff
