@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" font-family="system-ui, -apple-system, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" font-family="system-ui, -apple-system, sans-serif">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#0f0f23" />
@@ -19,116 +19,114 @@
     <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 8 3, 0 6" fill="#6366f1"/>
     </marker>
+    <marker id="arr-g" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#10b981"/>
+    </marker>
     <marker id="arr-dim" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 8 3, 0 6" fill="#475569"/>
     </marker>
   </defs>
 
-  <!-- Background -->
-  <rect width="800" height="480" rx="12" fill="url(#bg)"/>
+  <rect width="800" height="520" rx="12" fill="url(#bg)"/>
 
   <!-- Title -->
-  <text x="400" y="38" text-anchor="middle" fill="#e2e8f0" font-size="26" font-weight="700">code2idea</text>
-  <text x="400" y="58" text-anchor="middle" fill="#94a3b8" font-size="13">You bring the idea. It writes the code.</text>
+  <text x="400" y="36" text-anchor="middle" fill="#e2e8f0" font-size="26" font-weight="700">code2idea</text>
+  <text x="400" y="56" text-anchor="middle" fill="#94a3b8" font-size="13">You bring the idea. It writes the code.</text>
 
-  <!-- ═══ YOUR IDEA ═══ -->
-  <rect x="30" y="85" width="150" height="60" rx="10" fill="none" stroke="url(#accent)" stroke-width="2"/>
-  <text x="105" y="110" text-anchor="middle" fill="#c4b5fd" font-size="12" font-weight="600">YOUR IDEA</text>
-  <text x="105" y="126" text-anchor="middle" fill="#94a3b8" font-size="10">"try attention gates"</text>
+  <!-- ── ROW 1: IDEA → CLASSIFY ── -->
 
-  <!-- Arrow to classify -->
-  <line x1="180" y1="115" x2="218" y2="115" stroke="#6366f1" stroke-width="2" marker-end="url(#arr)"/>
+  <rect x="40" y="80" width="140" height="50" rx="10" fill="none" stroke="url(#accent)" stroke-width="2"/>
+  <text x="110" y="101" text-anchor="middle" fill="#c4b5fd" font-size="12" font-weight="600">YOUR IDEA</text>
+  <text x="110" y="118" text-anchor="middle" fill="#94a3b8" font-size="10">"try attention gates"</text>
 
-  <!-- ═══ CLASSIFY ═══ -->
-  <!-- Diamond shape for decision -->
-  <polygon points="295,85 370,115 295,145 220,115" fill="#1e1e3f" stroke="url(#amber)" stroke-width="1.5"/>
-  <text x="295" y="112" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="600">CLASSIFY</text>
-  <text x="295" y="124" text-anchor="middle" fill="#94a3b8" font-size="9">specific?</text>
+  <line x1="180" y1="105" x2="225" y2="105" stroke="#6366f1" stroke-width="2" marker-end="url(#arr)"/>
 
-  <!-- ═══ SPECIFIC PATH (top) ═══ -->
-  <line x1="295" y1="85" x2="295" y2="55" stroke="#475569" stroke-width="1.5"/>
-  <line x1="295" y1="55" x2="500" y2="55" stroke="#475569" stroke-width="1.5" marker-end="url(#arr-dim)"/>
-  <text x="380" y="48" text-anchor="middle" fill="#64748b" font-size="10">specific → skip papers</text>
+  <!-- Diamond -->
+  <polygon points="300,75 380,105 300,135 220,105" fill="#1e1e3f" stroke="url(#amber)" stroke-width="1.5"/>
+  <text x="300" y="102" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="600">CLASSIFY</text>
+  <text x="300" y="115" text-anchor="middle" fill="#94a3b8" font-size="9">specific?</text>
 
-  <!-- ═══ EXPLORATORY PATH (right) ═══ -->
-  <line x1="370" y1="115" x2="408" y2="115" stroke="#6366f1" stroke-width="2" marker-end="url(#arr)"/>
-  <text x="388" y="108" fill="#64748b" font-size="9">exploratory</text>
+  <!-- ── SPECIFIC PATH (straight right, dimmed) ── -->
+  <line x1="380" y1="105" x2="490" y2="105" stroke="#475569" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr-dim)"/>
+  <text x="435" y="97" text-anchor="middle" fill="#64748b" font-size="10">yes — skip papers</text>
 
-  <!-- Papers box -->
-  <rect x="410" y="90" width="120" height="50" rx="8" fill="#1e1e3f" stroke="#334155" stroke-width="1"/>
-  <text x="470" y="110" text-anchor="middle" fill="#818cf8" font-size="10" font-weight="600">FIND PAPERS</text>
-  <text x="470" y="124" text-anchor="middle" fill="#94a3b8" font-size="9">arXiv + WebSearch</text>
+  <!-- ── EXPLORATORY PATH (down then right) ── -->
+  <line x1="300" y1="135" x2="300" y2="170" stroke="#6366f1" stroke-width="2"/>
+  <text x="315" y="157" fill="#64748b" font-size="10">no</text>
 
-  <!-- Arrow papers to discuss -->
-  <line x1="530" y1="115" x2="530" y2="115" stroke="#6366f1" stroke-width="2"/>
-  <line x1="530" y1="115" x2="568" y2="115" stroke="#6366f1" stroke-width="2"/>
+  <rect x="230" y="170" width="140" height="45" rx="8" fill="#1e1e3f" stroke="#334155" stroke-width="1"/>
+  <text x="300" y="189" text-anchor="middle" fill="#818cf8" font-size="10" font-weight="600">FIND PAPERS</text>
+  <text x="300" y="204" text-anchor="middle" fill="#94a3b8" font-size="9">arXiv API + WebSearch</text>
 
-  <!-- Both paths merge at DISCUSS -->
-  <!-- Specific path comes down -->
-  <line x1="570" y1="55" x2="570" y2="90" stroke="#475569" stroke-width="1.5"/>
+  <line x1="370" y1="192" x2="490" y2="192" stroke="#6366f1" stroke-width="2"/>
 
-  <!-- ═══ DISCUSS ═══ -->
-  <rect x="540" y="90" width="110" height="50" rx="8" fill="#1e1e3f" stroke="url(#amber)" stroke-width="2"/>
-  <text x="595" y="110" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="600">DISCUSS</text>
-  <text x="595" y="124" text-anchor="middle" fill="#94a3b8" font-size="9">confirm with user</text>
+  <!-- ── DISCUSS (both paths merge) ── -->
+  <!-- Specific path down to discuss -->
+  <line x1="540" y1="105" x2="540" y2="142" stroke="#475569" stroke-width="1.5"/>
+  <!-- Exploratory path up to discuss -->
+  <line x1="540" y1="192" x2="540" y2="180" stroke="#6366f1" stroke-width="2"/>
 
-  <!-- Arrow to implement -->
-  <line x1="650" y1="115" x2="688" y2="115" stroke="#6366f1" stroke-width="2" marker-end="url(#arr)"/>
+  <rect x="490" y="142" width="100" height="38" rx="8" fill="#1e1e3f" stroke="url(#amber)" stroke-width="2"/>
+  <text x="540" y="158" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="600">DISCUSS</text>
+  <text x="540" y="172" text-anchor="middle" fill="#94a3b8" font-size="9">confirm plan</text>
 
-  <!-- ═══ IMPLEMENT ═══ -->
-  <rect x="690" y="85" width="80" height="60" rx="8" fill="#1e1e3f" stroke="url(#accent)" stroke-width="2"/>
-  <text x="730" y="110" text-anchor="middle" fill="#c4b5fd" font-size="10" font-weight="600">IMPLEMENT</text>
-  <text x="730" y="124" text-anchor="middle" fill="#94a3b8" font-size="9">Agent edits</text>
+  <!-- ── IMPLEMENT ── -->
+  <line x1="590" y1="161" x2="630" y2="161" stroke="#6366f1" stroke-width="2" marker-end="url(#arr)"/>
 
-  <!-- ═══ SECOND ROW: commit → launch → return ═══ -->
-  <line x1="730" y1="145" x2="730" y2="170" stroke="#6366f1" stroke-width="2"/>
-  <line x1="730" y1="170" x2="570" y2="170" stroke="#6366f1" stroke-width="2"/>
+  <rect x="632" y="138" width="90" height="46" rx="8" fill="#1e1e3f" stroke="url(#accent)" stroke-width="2"/>
+  <text x="677" y="158" text-anchor="middle" fill="#c4b5fd" font-size="10" font-weight="600">IMPLEMENT</text>
+  <text x="677" y="172" text-anchor="middle" fill="#94a3b8" font-size="9">Agent edits code</text>
 
-  <rect x="440" y="155" width="130" height="35" rx="8" fill="#1e1e3f" stroke="#334155" stroke-width="1"/>
-  <text x="505" y="177" text-anchor="middle" fill="#e2e8f0" font-size="11">git commit + push</text>
+  <!-- ── ROW 3: COMMIT → LAUNCH → RETURN ── -->
 
-  <line x1="440" y1="172" x2="400" y2="172" stroke="#6366f1" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="677" y1="184" x2="677" y2="218" stroke="#6366f1" stroke-width="2"/>
 
-  <rect x="260" y="155" width="140" height="35" rx="8" fill="none" stroke="url(#green)" stroke-width="2"/>
-  <text x="330" y="177" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600">Launch experiment</text>
+  <rect x="580" y="218" width="130" height="32" rx="6" fill="#1e1e3f" stroke="#334155" stroke-width="1"/>
+  <text x="645" y="239" text-anchor="middle" fill="#e2e8f0" font-size="11">git commit + push</text>
 
-  <line x1="260" y1="172" x2="218" y2="172" stroke="#10b981" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="580" y1="234" x2="530" y2="234" stroke="#6366f1" stroke-width="2" marker-end="url(#arr)"/>
 
-  <rect x="60" y="155" width="158" height="35" rx="8" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="4,3"/>
-  <text x="139" y="177" text-anchor="middle" fill="#94a3b8" font-size="11">Return → start next idea</text>
+  <rect x="380" y="218" width="150" height="32" rx="6" fill="none" stroke="url(#green)" stroke-width="2"/>
+  <text x="455" y="239" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600">Launch experiment</text>
 
-  <!-- Divider -->
-  <line x1="40" y1="210" x2="760" y2="210" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
-  <text x="400" y="234" text-anchor="middle" fill="#64748b" font-size="11" font-weight="600" letter-spacing="2">PARALLEL ITERATIONS</text>
+  <line x1="380" y1="234" x2="330" y2="234" stroke="#10b981" stroke-width="2" marker-end="url(#arr-g)"/>
 
-  <!-- Terminal mockup -->
-  <rect x="60" y="252" width="680" height="210" rx="8" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
-  <circle cx="80" cy="268" r="5" fill="#f85149"/>
-  <circle cx="96" cy="268" r="5" fill="#e3b341"/>
-  <circle cx="112" cy="268" r="5" fill="#3fb950"/>
-  <text x="156" y="272" fill="#484f58" font-size="11">claude</text>
+  <rect x="160" y="218" width="170" height="32" rx="6" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="245" y="239" text-anchor="middle" fill="#94a3b8" font-size="11">Return — start next idea</text>
 
-  <!-- Specific idea (no papers) -->
-  <text x="80" y="296" fill="#8b949e" font-size="11.5" font-family="monospace">❯</text>
-  <text x="96" y="296" fill="#c9d1d9" font-size="11.5" font-family="monospace">/idea-iter add attention gates to decoder</text>
-  <text x="80" y="314" fill="#94a3b8" font-size="10.5" font-family="monospace">  Specific idea → skipping paper search</text>
-  <text x="80" y="330" fill="#fbbf24" font-size="10.5" font-family="monospace">  Plan: add attention gates at skip connections. Proceed? [Yes]</text>
-  <text x="530" y="330" fill="#3fb950" font-size="11.5" font-family="monospace">→ iter 1 launched</text>
+  <!-- ── DIVIDER ── -->
+  <line x1="40" y1="270" x2="760" y2="270" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+  <text x="400" y="292" text-anchor="middle" fill="#64748b" font-size="11" font-weight="600" letter-spacing="2">PARALLEL ITERATIONS</text>
 
-  <!-- Exploratory idea (with papers) -->
-  <text x="80" y="356" fill="#8b949e" font-size="11.5" font-family="monospace">❯</text>
-  <text x="96" y="356" fill="#c9d1d9" font-size="11.5" font-family="monospace">/idea-iter improve model generalization</text>
-  <text x="80" y="374" fill="#94a3b8" font-size="10.5" font-family="monospace">  Exploratory → found 10 papers → proposing: mixup augmentation</text>
-  <text x="80" y="390" fill="#fbbf24" font-size="10.5" font-family="monospace">  Plan: add mixup in data loader. Proceed? [Yes]</text>
-  <text x="530" y="390" fill="#3fb950" font-size="11.5" font-family="monospace">→ iter 2 launched</text>
+  <!-- ── TERMINAL ── -->
+  <rect x="60" y="308" width="680" height="195" rx="8" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+  <circle cx="80" cy="324" r="5" fill="#f85149"/>
+  <circle cx="96" cy="324" r="5" fill="#e3b341"/>
+  <circle cx="112" cy="324" r="5" fill="#3fb950"/>
+  <text x="156" y="328" fill="#484f58" font-size="11">claude</text>
+
+  <!-- Specific idea -->
+  <text x="80" y="354" fill="#8b949e" font-size="11.5" font-family="monospace">❯</text>
+  <text x="96" y="354" fill="#c9d1d9" font-size="11.5" font-family="monospace">/idea-iter add attention gates to decoder</text>
+  <text x="80" y="372" fill="#94a3b8" font-size="10" font-family="monospace">  Specific → skip papers → discuss plan</text>
+  <text x="548" y="372" fill="#3fb950" font-size="11" font-family="monospace">→ iter 1</text>
+
+  <!-- Exploratory idea -->
+  <text x="80" y="398" fill="#8b949e" font-size="11.5" font-family="monospace">❯</text>
+  <text x="96" y="398" fill="#c9d1d9" font-size="11.5" font-family="monospace">/idea-iter improve model generalization</text>
+  <text x="80" y="416" fill="#94a3b8" font-size="10" font-family="monospace">  Exploratory → 10 papers → propose mixup → discuss</text>
+  <text x="548" y="416" fill="#3fb950" font-size="11" font-family="monospace">→ iter 2</text>
 
   <!-- Auto mode -->
-  <text x="80" y="416" fill="#8b949e" font-size="11.5" font-family="monospace">❯</text>
-  <text x="96" y="416" fill="#c9d1d9" font-size="11.5" font-family="monospace">/idea-iter --auto increase LR to 3e-4</text>
-  <text x="530" y="416" fill="#3fb950" font-size="11.5" font-family="monospace">→ iter 3 launched</text>
+  <text x="80" y="442" fill="#8b949e" font-size="11.5" font-family="monospace">❯</text>
+  <text x="96" y="442" fill="#c9d1d9" font-size="11.5" font-family="monospace">/idea-iter --auto increase LR to 3e-4</text>
+  <text x="548" y="442" fill="#3fb950" font-size="11" font-family="monospace">→ iter 3</text>
 
   <!-- Check -->
-  <text x="80" y="444" fill="#8b949e" font-size="11.5" font-family="monospace">❯</text>
-  <text x="96" y="444" fill="#58a6ff" font-size="11.5" font-family="monospace">/check-experiments</text>
-  <text x="530" y="444" fill="#e3b341" font-size="11.5" font-family="monospace">→ results collected</text>
+  <text x="80" y="472" fill="#8b949e" font-size="11.5" font-family="monospace">❯</text>
+  <text x="96" y="472" fill="#58a6ff" font-size="11.5" font-family="monospace">/check-experiments</text>
+  <text x="548" y="472" fill="#e3b341" font-size="11" font-family="monospace">→ results</text>
+
+  <!-- Subtle label for --auto -->
+  <text x="80" y="486" fill="#475569" font-size="9" font-family="monospace">  --auto skips discussion</text>
 </svg>
