@@ -10,18 +10,14 @@ Turn a research idea into running code. One command, one experiment.
 /idea-iter try attention gates in the decoder
 ```
 
-## Why idea-to-code?
+## What it does
 
-There are tools that use LLMs to *generate* research ideas (AI Scientist, etc.) and tools that *evaluate* them (GPT-as-reviewer). What's missing is the step in between: **turning a specific idea into working code in your codebase**.
-
-code2idea focuses on this. You decide what to try. The agent:
+You describe an idea. The agent:
 - Finds relevant papers to inform the implementation
 - Reads your codebase to understand the architecture
 - Makes surgical code edits to implement your idea
 - Commits, pushes, and launches the experiment
 - Returns immediately so you can start the next idea
-
-The research taste stays with you. The implementation grunt work doesn't.
 
 ## Install
 
