@@ -38,6 +38,7 @@ npx code2idea
 
 ```bash
 git clone https://github.com/haoyudong-97/claude_research_assistant.git /tmp/code2idea && \
+  rm -rf ~/.claude/skills/idea-iter ~/.claude/skills/check-experiments ~/.claude/skills/combine-findings && \
   cp -r /tmp/code2idea/skill/idea-iter ~/.claude/skills/ && \
   cp -r /tmp/code2idea/skill/check-experiments ~/.claude/skills/ && \
   cp -r /tmp/code2idea/skill/combine-findings ~/.claude/skills/ && \
