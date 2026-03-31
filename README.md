@@ -1,30 +1,27 @@
 # code2idea
 
-Autonomous research loop for Claude Code. Give one idea, get a launched experiment.
+Turn a research idea into running code. One command, one experiment.
+
+> "Talk is cheap. Show me the code." But now in the era of AI coding, the reverse might be true — **your ability to create a new idea is far more important than implementing it.**
+>
+> This tool bridges that gap. You bring the idea. It writes the code.
 
 ```
-npx code2idea
+/idea-iter try attention gates in the decoder
 ```
 
-## What It Does
+## Why idea-to-code?
 
-Three skills that work together for iterative research:
+There are tools that use LLMs to *generate* research ideas (AI Scientist, etc.) and tools that *evaluate* them (GPT-as-reviewer). What's missing is the step in between: **turning a specific idea into working code in your codebase**.
 
-```bash
-/idea-iter try attention gates in the decoder    # idea -> papers -> code -> launch
-/check-experiments                                # collect results, present summary
-/combine-findings https://arxiv.org/abs/2401...   # integrate a paper into current work
-```
+code2idea focuses on this. You decide what to try. The agent:
+- Finds relevant papers to inform the implementation
+- Reads your codebase to understand the architecture
+- Makes surgical code edits to implement your idea
+- Commits, pushes, and launches the experiment
+- Returns immediately so you can start the next idea
 
-Each `/idea-iter` call runs the full cycle and **returns immediately** — the experiment runs in the background. Start multiple iterations in parallel:
-
-```
-/idea-iter add attention gates to decoder        -> launches iter 1
-/idea-iter increase batch size to 4              -> launches iter 2
-/idea-iter try cosine annealing schedule         -> launches iter 3
-
-/check-experiments                               -> collects all finished results
-```
+The research taste stays with you. The implementation grunt work doesn't.
 
 ## Install
 
@@ -49,8 +46,6 @@ git clone https://github.com/haoyudong-97/claude_research_assistant.git /tmp/cod
   echo "Done! Skills installed."
 ```
 
-Both methods install three skills into `~/.claude/skills/`. Python tools are bundled — no `pip install` needed.
-
 ### Requirements
 
 - [Claude Code](https://claude.ai/code) installed
@@ -60,32 +55,51 @@ Both methods install three skills into `~/.claude/skills/`. Python tools are bun
 ### Uninstall
 
 ```bash
-# If installed via npx:
-npx code2idea --uninstall
-
-# Or manually:
 rm -rf ~/.claude/skills/idea-iter ~/.claude/skills/check-experiments ~/.claude/skills/combine-findings
+```
+
+## Usage
+
+```bash
+cd your-project && claude
+```
+
+```
+/idea-iter try attention gates in the decoder       # idea -> papers -> code -> launch
+/idea-iter --auto increase batch size to 4          # skip confirmation, launch directly
+/check-experiments                                   # collect results when training finishes
+/combine-findings https://arxiv.org/abs/2401...      # integrate a specific paper
+```
+
+Run multiple iterations in parallel — each gets its own git branch and checkpoint:
+
+```
+/idea-iter add attention gates to decoder        -> iter 1 launched
+/idea-iter increase batch size to 4              -> iter 2 launched
+/idea-iter try cosine annealing schedule         -> iter 3 launched
+
+/check-experiments                               -> collects all finished results
 ```
 
 ## How It Works
 
-1. **Fetch papers** from arXiv + Semantic Scholar — top 5 with full text (cached 15 min)
-2. **Generate ideas** via Agent subagent — digests papers, proposes approaches
-3. **Select approach** — picks the best idea, asks for confirmation
-4. **Implement code** via Agent subagent — reads your codebase, makes surgical edits
-5. **Commit + push** — each iteration gets a git branch
-6. **Launch experiment** — GPU-aware deployment (local or remote via SSH)
-7. **Return immediately** — start the next iteration while this one trains
+```
+Your idea
+    ↓
+Find relevant papers (arXiv API + WebSearch, top 10 with full text)
+    ↓
+Read your codebase, understand the architecture
+    ↓
+Implement the idea (surgical code edits via Agent)
+    ↓
+Commit to git branch (iter/1-attention-gates)
+    ↓
+Launch experiment (GPU-aware, local or remote SSH)
+    ↓
+Return immediately — start next idea
+```
 
-### Hooks
-
-PostToolUse hooks auto-update `state.json` on deploy, git commit, and git checkout. PreToolUse hooks warn when training commands run outside the framework.
-
-## Project Setup
-
-Just `cd your-project && claude` and type `/idea-iter improve model generalization`.
-
-The skill auto-creates `state.json` (tracks iterations, metrics, best result) and `progress.md` (human-readable dashboard, fully auto-generated from state.json).
+State tracking happens automatically via hooks — every `git commit`, `deploy launch`, and experiment completion updates `state.json` and `progress.md` without manual commands.
 
 ## License
 
