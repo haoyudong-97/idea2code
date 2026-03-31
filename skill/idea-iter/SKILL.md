@@ -80,11 +80,23 @@ Store the result as `NEXT_ITER`. Infer arXiv `CATEGORIES` from the idea:
 
 ---
 
-## Phase 2: Fetch Papers (two sources, ~10 total)
+## Phase 2: Classify the Idea
 
-### 2a: arXiv + Semantic Scholar (structured, with full text)
+Decide how specific the user's idea is:
 
-Run the Python search — this returns 5 relevance-ranked papers with full text from arXiv HTML:
+- **Specific** — the idea describes a concrete code change (e.g., "add attention gates to decoder skip connections", "increase batch size to 4", "replace ReLU with GELU in the encoder"). You know exactly what to implement.
+- **Exploratory** — the idea is a direction or question (e.g., "improve generalization", "reduce inference time", "try something with text prompts"). You need papers to figure out *what* to implement.
+
+### If Specific → skip to Phase 3
+
+No paper search needed. Formulate directly:
+- `HYPOTHESIS` — what you expect this change to achieve
+- `CHANGE_DESC` — short summary for git
+- `INSTRUCTION` — detailed implementation plan for the Agent
+
+### If Exploratory → search for papers first
+
+#### arXiv + Semantic Scholar (structured, with full text)
 
 ```bash
 python -m research_agent.idea_discovery \
@@ -95,42 +107,27 @@ python -m research_agent.idea_discovery \
   --limit 5
 ```
 
-If this fails, fall back to:
+Fallback: `python -m research_agent.search_papers "<IDEA>" results/recent_papers.json --limit 5`
 
-```bash
-python -m research_agent.search_papers "<IDEA>" results/recent_papers.json --limit 5
-```
-
-### 2b: WebSearch (broader coverage)
+#### WebSearch (broader coverage)
 
 Use the `WebSearch` tool to search for: `"<IDEA>" recent paper 2025 2026 arxiv`
 
-From the results, extract up to 5 papers NOT already in `results/recent_papers.json`. For each, record title, authors, year, abstract (from snippet), url, and `source: "web_search"`. Append them to `results/recent_papers.json`.
+Extract up to 5 additional papers not already in `results/recent_papers.json`. Append them with `source: "web_search"`.
 
-For any WebSearch paper with an arXiv URL, use `WebFetch` on the abstract page to get the full abstract.
-
-### Result
-
-After both steps, `results/recent_papers.json` should contain ~10 papers. If one source fails, proceed with whatever the other returned. If all search fails, skip to Phase 3 with just the user's raw idea.
-
----
-
-## Phase 3: Generate Ideas & Select Approach
-
-### 3a: Launch idea generation Agent
+#### Generate ideas from papers
 
 Spawn an Agent (subagent_type: general-purpose) with this prompt:
 
 ```
 Read results/recent_papers.json in the project root.
-It contains ~10 papers: some with full text (from arXiv), some with abstracts only (from web search).
 Also read state.json if it exists for project context.
 
-The user's research idea is: <IDEA>
+The user's research direction is: <IDEA>
 
 From these papers:
 1. Identify the 3-5 most relevant trends/techniques.
-2. Propose 3-5 concrete research ideas aligned with the user's idea.
+2. Propose 3-5 concrete research ideas aligned with the user's direction.
 
 For each idea include: title, hypothesis, approach (specific code changes), expected_impact, difficulty (low/medium/high), relevant_papers, and a pilot_design (what to run, estimated gpu_hours, success_criterion).
 
@@ -145,32 +142,29 @@ This is a research-only task. Do not modify any project code.
 
 **Wait for the Agent to complete.**
 
-### 3b: Select the best approach
+Read `results/ideas.json`. Pick ONE idea based on relevance, feasibility (prefer low/medium), novelty (skip overlap with `LAST_ITERS`), and concreteness.
 
-Read `results/ideas.json`. Pick ONE idea based on relevance to `IDEA`, feasibility (prefer low/medium difficulty), novelty (skip what overlaps with `LAST_ITERS`), and concreteness.
+Formulate: `HYPOTHESIS`, `CHANGE_DESC`, `INSTRUCTION`, `PAPERS_USED`.
 
-Formulate: `HYPOTHESIS`, `CHANGE_DESC` (short, for git), `INSTRUCTION` (detailed, for the implementation Agent), `PAPERS_USED`.
+---
 
-Tell the user in 2-3 lines which approach you picked and why.
+## Phase 3: Discuss with User
 
-If no ideas.json exists (Agent or fetch failed), formulate an instruction directly from the user's raw `IDEA`.
+Always discuss the plan before implementing — even for specific ideas.
 
-### 3c: Confirm with user
+If `$idea` contains `--auto`, skip this phase.
 
-If `$idea` contains `--auto`, skip confirmation and proceed.
+Present:
 
-Otherwise, present:
-
-> **Selected approach:** <TITLE>
+> **What I'll do:** <CHANGE_DESC>
 > **Hypothesis:** <HYPOTHESIS>
-> **What will change:** <CHANGE_DESC>
-> **Pilot:** <PILOT_EXPERIMENT> (~<GPU_HOURS> GPU-hours)
+> **Implementation plan:** <INSTRUCTION summary, 2-3 lines>
+> **Papers:** <PAPERS_USED, if any — or "none, implementing your idea directly">
 >
-> Proceed with: **Full experiment** / **Pilot first** / **Modify** / **Skip**
+> Proceed? **Yes** / **Modify** / **Skip**
 
-- **Full experiment** → continue to Phase 4
-- **Pilot first** → continue to Phase 4 with pilot_design parameters (fewer epochs, smaller data)
-- **Modify** → user gives feedback, reformulate, ask again
+- **Yes** → continue to Phase 4
+- **Modify** → user gives feedback, reformulate, present again
 - **Skip** → stop here
 
 **Wait for user response before continuing.**
@@ -304,14 +298,14 @@ Tell the user:
 
 ## Fallback Chain
 
-| Level | Paper fetch | Idea generation | Implementation |
+| Idea type | Paper search | Idea generation | Implementation |
 |---|---|---|---|
-| Full | `idea_discovery.py` (top 5 + fulltext) + WebSearch (5 more) | Agent | Agent |
-| Partial | `search_papers.py` (5) | Agent | Agent |
-| Minimal | WebSearch only | You synthesize | Agent |
-| Direct | None | User's raw idea | Agent |
+| Specific idea | Skipped | User's idea directly | Agent |
+| Exploratory + papers found | arXiv + WebSearch (~10) | Agent proposes from papers | Agent |
+| Exploratory + search fails | WebSearch only | Agent or you synthesize | Agent |
+| Exploratory + all fails | None | User refines the idea | Agent |
 
-Implementation always goes through the Agent tool. Only paper context quality degrades.
+Implementation always goes through the Agent tool. Paper search only runs for exploratory ideas.
 
 ---
 
