@@ -112,7 +112,7 @@ function showHelp() {
     /check-experiments         Check running experiments, collect results
     /combine-findings <input>  Integrate a paper/idea into current work
 
-  Learn more: https://github.com/haoyudong-97/claude_research_assistant
+  Learn more: https://github.com/haoyudong-97/idea2code
 `);
 }
 

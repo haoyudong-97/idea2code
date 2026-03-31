@@ -34,7 +34,7 @@ npx code2idea
 ### Option B: git clone (no Node.js needed)
 
 ```bash
-git clone https://github.com/haoyudong-97/claude_research_assistant.git /tmp/code2idea && \
+git clone https://github.com/haoyudong-97/idea2code.git /tmp/code2idea && \
   rm -rf ~/.claude/skills/idea-iter ~/.claude/skills/check-experiments ~/.claude/skills/combine-findings && \
   cp -r /tmp/code2idea/skill/idea-iter ~/.claude/skills/ && \
   cp -r /tmp/code2idea/skill/check-experiments ~/.claude/skills/ && \
