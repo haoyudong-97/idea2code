@@ -28,11 +28,27 @@ Each `/idea-iter` call runs the full cycle and **returns immediately** — the e
 
 ## Install
 
+### Option A: npx (requires Node.js)
+
 ```bash
 npx code2idea
 ```
 
-This installs three skills into `~/.claude/skills/`. Python tools are bundled — no `pip install` needed.
+### Option B: git clone (no Node.js needed)
+
+```bash
+git clone https://github.com/haoyudong-97/claude_research_assistant.git /tmp/code2idea && \
+  cp -r /tmp/code2idea/skill/idea-iter ~/.claude/skills/ && \
+  cp -r /tmp/code2idea/skill/check-experiments ~/.claude/skills/ && \
+  cp -r /tmp/code2idea/skill/combine-findings ~/.claude/skills/ && \
+  for s in idea-iter check-experiments combine-findings; do \
+    cp -r /tmp/code2idea/skill/research_agent ~/.claude/skills/$s/; \
+  done && \
+  rm -rf /tmp/code2idea && \
+  echo "Done! Skills installed."
+```
+
+Both methods install three skills into `~/.claude/skills/`. Python tools are bundled — no `pip install` needed.
 
 ### Requirements
 
@@ -43,7 +59,11 @@ This installs three skills into `~/.claude/skills/`. Python tools are bundled �
 ### Uninstall
 
 ```bash
+# If installed via npx:
 npx code2idea --uninstall
+
+# Or manually:
+rm -rf ~/.claude/skills/idea-iter ~/.claude/skills/check-experiments ~/.claude/skills/combine-findings
 ```
 
 ## How It Works
