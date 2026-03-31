@@ -283,23 +283,58 @@ def _write_progress(state: dict, status_note: str = "") -> None:
             lines.append(f"| {it['id']} | {chg} | {m_str} | {delta_str} | {fb} |")
         lines.append("")
 
-    # Detailed iteration notes (most recent 3)
-    recent = iters[-3:] if len(iters) > 3 else iters
-    if recent:
-        lines.append("## Recent Iterations (detail)")
+    # Detailed iteration notes (all iterations)
+    if iters:
+        lines.append("## Iterations (detail)")
         lines.append("")
-        for it in reversed(recent):
+        for it in reversed(iters):
             status = _iter_status(it)
             status_suffix = f" [{status}]" if status != "completed" else ""
-            lines.append(f"### Iteration {it['id']}{status_suffix} — {it.get('timestamp', '')}")
-            lines.append(f"- **Hypothesis:** {it.get('hypothesis', 'N/A')}")
-            lines.append(f"- **Change:** {it.get('change_summary', 'N/A')}")
+            lines.append(f"### Iteration {it['id']}{status_suffix} — {it.get('change_summary', 'N/A')}")
+            lines.append("")
+
+            # Method paragraph
+            lines.append("**Method:**")
+            method_parts = []
+            if it.get("hypothesis"):
+                method_parts.append(it["hypothesis"])
+            if it.get("change_summary") and it["change_summary"] != it.get("hypothesis", ""):
+                method_parts.append(f"Implementation: {it['change_summary']}")
             if it.get("papers_referenced"):
-                lines.append(f"- **Papers:** {', '.join(it['papers_referenced'])}")
-            lines.append(f"- **Checkpoint:** `{it.get('checkpoint', 'N/A')}`")
-            if status == "completed":
-                lines.append(f"- **Metrics:** {json.dumps(it.get('metrics', {}))}")
-            lines.append(f"- **Feedback:** {it.get('feedback', 'N/A')}")
+                method_parts.append(f"Based on: {', '.join(it['papers_referenced'])}")
+            lines.append(" ".join(method_parts) if method_parts else "N/A")
+            lines.append("")
+
+            # Results
+            if status == "completed" and it.get("metrics"):
+                lines.append("**Results:**")
+                for k, v in it["metrics"].items():
+                    delta_str = ""
+                    if bl and bl.get("metrics") and k in bl["metrics"]:
+                        try:
+                            d = float(v) - float(bl["metrics"][k])
+                            sign = "+" if d >= 0 else ""
+                            delta_str = f" ({sign}{d:.4f} vs baseline)"
+                        except (ValueError, TypeError):
+                            pass
+                    lines.append(f"- {k}: **{v}**{delta_str}")
+                lines.append("")
+            elif status == "failed":
+                lines.append(f"**Result:** FAILED — {it.get('feedback', 'unknown error')}")
+                lines.append("")
+            elif status in ("coding", "running"):
+                lines.append(f"**Result:** {_status_label(status)}")
+                lines.append("")
+
+            # Learnings paragraph
+            if it.get("feedback") and status in ("completed", "failed"):
+                lines.append("**Learnings:**")
+                lines.append(it["feedback"])
+                lines.append("")
+
+            lines.append(f"*{it.get('timestamp', '')}* | Checkpoint: `{it.get('checkpoint', 'N/A')}`")
+            lines.append("")
+            lines.append("---")
             lines.append("")
 
     lines.append(f"*Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*")

@@ -91,7 +91,7 @@ Note it and move on. Report it as still running in the summary.
    - Record failure:
      ```bash
      python -m research_agent.state fail-iteration --id <ID> \
-       --feedback "<error summary>"
+       --feedback "<what went wrong and what to try differently>"
      ```
 
 3. **EXIT_CODE == 0** (succeeded):
@@ -100,11 +100,11 @@ Note it and move on. Report it as still running in the summary.
      - Metric values in the tail of `<CHECKPOINT>/training.log`
      - Eval result files in the project
    - Read the primary metric name from state (`primary_metric` field).
-   - Record success:
+   - Record success. The `--feedback` field is important — write 1-2 sentences about **what we learned** from this iteration (e.g., "Attention gates helped on small organs but hurt large ones. Consider organ-specific gating next."):
      ```bash
      python -m research_agent.state complete-iteration --id <ID> \
        --metric-name <PRIMARY_METRIC> --metric-value <VALUE> \
-       --feedback "<brief observation>"
+       --feedback "<what we learned from this iteration — insights, surprises, what to try next>"
      ```
 
 ---
