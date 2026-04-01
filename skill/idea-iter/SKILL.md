@@ -318,3 +318,4 @@ Implementation always goes through the Agent tool. Paper search only runs for ex
 - Commit code before launching experiments. Push after commits.
 - Each iteration gets a unique checkpoint directory — never reuse.
 - After launching, return immediately. Do not poll for completion.
+- Never run git commands with `run_in_background`. Git operations must complete before the next step. Only `deploy launch` runs in background.
