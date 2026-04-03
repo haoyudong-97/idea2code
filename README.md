@@ -99,7 +99,7 @@ Launch experiment (GPU-aware, local or remote SSH)
 Return immediately — start next idea
 ```
 
-State tracking happens automatically via hooks — every `git commit`, `deploy launch`, and experiment completion updates `state.json` and `progress.md` without manual commands.
+`state.json` and `progress.md` track all iterations, metrics, and results automatically.
 
 ## License
 

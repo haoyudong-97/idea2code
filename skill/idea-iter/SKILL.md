@@ -8,17 +8,6 @@ disable-model-invocation: false
 version: "0.2.0"
 effort: high
 allowed-tools: Bash(python -m research_agent:*), Bash(test:*), Bash(git diff:*), Bash(git add:*), Bash(git commit:*), Bash(git branch:*), Read, Grep, WebFetch(domain:arxiv.org), WebFetch(domain:semanticscholar.org), WebSearch, Agent
-hooks:
-  PreToolUse:
-    - matcher: Bash
-      hooks:
-        - type: command
-          command: "python $HOME/.claude/skills/idea-iter/research_agent/hooks/track_state.py"
-  PostToolUse:
-    - matcher: Bash|Edit
-      hooks:
-        - type: command
-          command: "python $HOME/.claude/skills/idea-iter/research_agent/hooks/track_state.py"
 ---
 
 # Idea-Iter: Autonomous Research Orchestrator
@@ -268,7 +257,13 @@ Launch the experiment with `run_in_background: true`:
 python -m research_agent.deploy launch <EXP_SCRIPT> <CHECKPOINT_DIR>
 ```
 
-The PostToolUse hook auto-updates state.json — no manual `state launch-iteration` call needed.
+After launching, update state:
+
+```bash
+python -m research_agent.state launch-iteration \
+  --id <NEXT_ITER> \
+  --checkpoint "<CHECKPOINT_DIR>"
+```
 
 For remote deployment, add `--host <HOST>`. The tool auto-selects the GPU with most free memory, syncs code via rsync, and launches in a screen session.
 
@@ -313,7 +308,7 @@ Implementation always goes through the Agent tool. Paper search only runs for ex
 
 - Always delegate code changes to an Agent subagent. Use the Edit tool, not Write.
 - Paper fetching uses Python scripts (`idea_discovery.py`, `search_papers.py`) — always safe.
-- State tracking is automatic via PostToolUse hooks on deploy, git commit, and git checkout.
+- Update state.json after launching experiments (use `state launch-iteration`).
 - One change per invocation. Run phases sequentially.
 - Commit code before launching experiments. Push after commits.
 - Each iteration gets a unique checkpoint directory — never reuse.

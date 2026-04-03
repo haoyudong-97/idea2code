@@ -8,12 +8,6 @@ disable-model-invocation: false
 version: "0.2.0"
 effort: high
 allowed-tools: Bash(python -m research_agent:*), Bash(test:*), Bash(git diff:*), Read, Grep, WebFetch(domain:arxiv.org), WebFetch(domain:semanticscholar.org), WebSearch, Agent
-hooks:
-  PostToolUse:
-    - matcher: Bash|Edit
-      hooks:
-        - type: command
-          command: "python $HOME/.claude/skills/combine-findings/research_agent/hooks/track_state.py"
 ---
 
 # Combine Findings: Integrate External Input
