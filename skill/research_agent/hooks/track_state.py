@@ -22,14 +22,16 @@ from pathlib import Path
 
 STATE_FILE = Path(os.environ.get("RESEARCH_STATE_FILE", "state.json"))
 
+# Only match commands that are clearly training/experiment launches.
+# Avoid matching generic python scripts (analysis, eval, plotting, etc.)
 TRAIN_PATTERNS = [
-    r"python\s+.*train", r"python\s+-m\s+\S*train", r"python\s+.*experiment",
-    r"python\s+.*run[_\s]", r"python\s+.*main\.py", r"bash\s+.*train",
-    r"bash\s+.*run", r"bash\s+.*experiment", r"bash\s+.*launch", r"sh\s+.*train",
-    r"sbatch\s+", r"srun\s+", r"nohup\s+.*train", r"nohup\s+.*python",
-    r"screen\s+-.*train", r"tmux\s+.*train", r"torchrun\s+", r"accelerate\s+launch",
-    r"deepspeed\s+", r"python\s+-m\s+torch\.distributed", r"run_and_wait\.sh",
-    r"nnUNetv2_train", r"nnUNetv2_predict", r"nnUNetv2_evaluate",
+    r"python\S*\s+\S*train\.py", r"python\S*\s+-m\s+\S*train\b",
+    r"bash\s+\S*train", r"sh\s+\S*train",
+    r"sbatch\s+", r"srun\s+",
+    r"nohup\s+.*train", r"torchrun\s+", r"accelerate\s+launch",
+    r"deepspeed\s+", r"python\S*\s+-m\s+torch\.distributed",
+    r"run_and_wait\.sh",
+    r"nnUNetv2_train",
 ]
 TRAIN_RE = re.compile("|".join(TRAIN_PATTERNS), re.IGNORECASE)
 
@@ -283,4 +285,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        # Never crash — a hook error blocks the user's workflow
+        print("{}")
+        sys.exit(0)
