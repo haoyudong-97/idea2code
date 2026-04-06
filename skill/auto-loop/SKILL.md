@@ -77,16 +77,18 @@ Repeat the following for up to `MAX_ITERS` iterations (or until `MAX_HOURS` exce
 
 ### 3a: Decide what to try next
 
+Every idea you formulate must serve the user's `DIRECTION`. This is the high-level goal — all iterations in this loop are different approaches to achieve it. Do not drift into unrelated experiments.
+
 Based on the current research state:
 
-- **First iteration:** Use the user's `DIRECTION` as the idea. This is exploratory — search for papers.
-- **After a successful iteration:** Build on what worked. Try a variant, combine with another technique, or push the approach further.
-- **After a failed iteration:** Try something different. Analyze what went wrong and pivot.
-- **After a plateau (3+ iterations with <1% improvement):** Search for fresh papers with a broader query. Try a fundamentally different approach.
+- **First iteration:** Use `DIRECTION` directly. This is exploratory — search for papers relevant to the goal.
+- **After a successful iteration:** Build on what worked. Try a variant, combine with another technique, or push the same direction further.
+- **After a failed iteration:** Try a different approach to the same goal. Analyze what went wrong and pivot.
+- **After a plateau (3+ iterations with <1% improvement):** Search for fresh papers with a broader query. Try a fundamentally different approach — but still toward the same `DIRECTION`.
 
 Always respect `CONSTRAINTS` from Phase 1.
 
-Formulate ideas for the next batch. If `NUM_GPUS > 1`, you can formulate multiple ideas to run in parallel (up to `NUM_GPUS` at a time).
+Formulate ideas for the next batch. If `NUM_GPUS > 1`, formulate multiple ideas (up to `NUM_GPUS`), each exploring a different angle toward `DIRECTION`.
 
 ### 3b: Launch iterations
 
