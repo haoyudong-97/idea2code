@@ -36,7 +36,7 @@ Before starting, ask the user these questions. **Wait for answers before proceed
 >
 > Before I start the autonomous loop, I need a few details:
 >
-> 1. **How many GPUs can I use?** (e.g., 1, 2, 4 — this determines how many experiments can run in parallel)
+> 1. **How many GPUs can I use?** (e.g., 1, 2, 4 — each GPU runs a different iteration simultaneously)
 > 2. **How many hours should I run?** (e.g., 6, 12, 24 — I'll stop after this, even mid-iteration)
 > 3. **Max iterations?** (e.g., 5, 10, 20 — or "until goal reached")
 > 4. **Any constraints?** (e.g., "don't change the data loader", "only try attention-based methods")
@@ -89,25 +89,23 @@ Formulate ideas for the next batch. If `NUM_GPUS > 1`, you can formulate multipl
 
 ### 3b: Launch iterations
 
-**If NUM_GPUS == 1** (sequential):
+Formulate `NUM_GPUS` different ideas (or fewer if near `MAX_ITERS`). Each idea should explore a different angle — do not run the same idea twice.
 
-Invoke the `Skill` tool:
+Launch them one at a time. Each idea-iter creates a separate branch:
+
 ```
 skill: "idea-iter"
-args: "--auto <NEXT_IDEA>"
+args: "--auto <IDEA_1>"
 ```
 
-**Wait for idea-iter to complete.** It will implement code, commit, and launch the experiment.
+**Wait for idea-iter to finish its code changes and launch.** Then start the next:
 
-**If NUM_GPUS > 1** (parallel):
-
-Launch up to `NUM_GPUS` idea-iter calls. For each idea, invoke:
 ```
 skill: "idea-iter"
-args: "--auto <IDEA_N>"
+args: "--auto <IDEA_2>"
 ```
 
-Each idea-iter creates a separate branch and launches on a different GPU. Launch them one at a time (each idea-iter needs to finish its code changes before the next one starts, since they share the working directory).
+Repeat until `NUM_GPUS` experiments are running. Each runs on a different GPU automatically (deploy.py auto-selects the GPU with most free memory).
 
 ### 3c: Wait for experiments to finish
 
@@ -123,7 +121,7 @@ Check if any iteration's status is still `"running"`. If yes, wait:
 sleep 300
 ```
 
-Repeat until all running iterations change to `"completed"` or `"failed"`.
+Repeat until ALL running iterations in this batch change to `"completed"` or `"failed"`.
 
 Check wall-clock time — if `MAX_HOURS` exceeded, stop the loop.
 
@@ -223,5 +221,5 @@ python -m research_agent.git_ops push
 - If an iteration fails, do not retry the same thing — pivot.
 - Poll with `sleep 300` (5 min) between checks. Do not poll more frequently.
 - Stop if wall-clock time exceeds `MAX_HOURS` even mid-iteration.
-- With multiple GPUs, launch up to `NUM_GPUS` experiments per batch. Wait for the full batch to finish before starting the next.
+- With multiple GPUs, launch `NUM_GPUS` different iterations simultaneously. Wait for the full batch to finish before starting the next batch.
 - Always present the final report, even if stopped early.
