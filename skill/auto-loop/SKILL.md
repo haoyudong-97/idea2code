@@ -2,7 +2,7 @@
 name: auto-loop
 description: Run multiple research iterations automatically. Launches an idea, waits for the experiment, checks results, decides next direction, repeats.
 when_to_use: When the user says "run automatically", "auto loop", "keep iterating", "run N iterations", "overnight run", "hands-free", or wants the agent to run multiple idea-iter cycles without manual intervention.
-argument-hint: <research direction> [--iterations N] [--max-hours H]
+argument-hint: <research direction>
 arguments: direction
 disable-model-invocation: false
 version: "1.0.0"
@@ -15,8 +15,8 @@ allowed-tools: Bash(python -m research_agent:*), Bash(test:*), Bash(git diff:*),
 You are running a fully autonomous research loop. The user gives you a research direction — you run multiple iterations of idea → code → experiment → results → next idea, stopping when the goal is reached or the iteration budget is exhausted.
 
 ```
-/auto-loop improve segmentation accuracy --iterations 5
-/auto-loop try different attention mechanisms --max-hours 12
+/auto-loop improve segmentation accuracy
+/auto-loop try different attention mechanisms
 /auto-loop explore data augmentation strategies
 ```
 
@@ -28,12 +28,24 @@ export PYTHONPATH="$HOME/.claude/skills/auto-loop:$PYTHONPATH"
 
 ---
 
-## Phase 1: Parse Arguments & Load State
+## Phase 1: Ask Setup Questions
 
-Extract from `$direction`:
-- `DIRECTION` — the research direction (everything except flags)
-- `--iterations N` — max iterations to run (default: 5)
-- `--max-hours H` — max wall-clock hours (default: 24)
+Before starting, ask the user these questions. **Wait for answers before proceeding.**
+
+> **Research direction:** $direction
+>
+> Before I start the autonomous loop, I need a few details:
+>
+> 1. **How many GPUs can I use?** (e.g., 1, 2, 4 — this determines how many experiments can run in parallel)
+> 2. **How many hours should I run?** (e.g., 6, 12, 24 — I'll stop after this, even mid-iteration)
+> 3. **Max iterations?** (e.g., 5, 10, 20 — or "until goal reached")
+> 4. **Any constraints?** (e.g., "don't change the data loader", "only try attention-based methods")
+
+Store the answers as: `NUM_GPUS`, `MAX_HOURS`, `MAX_ITERS`, `CONSTRAINTS`.
+
+---
+
+## Phase 2: Load State
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -47,15 +59,22 @@ python -m research_agent.state init --goal "$direction" --metric "improvement"
 
 Note: `GOAL`, `BASELINE`, `BEST`, `COMPLETED_ITERS`, `PRIMARY_METRIC`.
 
+Check GPU availability:
+```bash
+python -m research_agent.deploy preflight
+```
+
+Confirm the available GPUs match what the user requested. If fewer GPUs are available, tell the user and adjust `NUM_GPUS` accordingly.
+
 Record the start time.
 
 ---
 
-## Phase 2: Iteration Loop
+## Phase 3: Iteration Loop
 
-Repeat the following for up to N iterations (or until max hours exceeded):
+Repeat the following for up to `MAX_ITERS` iterations (or until `MAX_HOURS` exceeded):
 
-### 2a: Decide what to try next
+### 3a: Decide what to try next
 
 Based on the current research state:
 
@@ -64,9 +83,13 @@ Based on the current research state:
 - **After a failed iteration:** Try something different. Analyze what went wrong and pivot.
 - **After a plateau (3+ iterations with <1% improvement):** Search for fresh papers with a broader query. Try a fundamentally different approach.
 
-Formulate `NEXT_IDEA` — a specific, concrete idea for the next iteration.
+Always respect `CONSTRAINTS` from Phase 1.
 
-### 2b: Run idea-iter
+Formulate ideas for the next batch. If `NUM_GPUS > 1`, you can formulate multiple ideas to run in parallel (up to `NUM_GPUS` at a time).
+
+### 3b: Launch iterations
+
+**If NUM_GPUS == 1** (sequential):
 
 Invoke the `Skill` tool:
 ```
@@ -74,11 +97,19 @@ skill: "idea-iter"
 args: "--auto <NEXT_IDEA>"
 ```
 
-The `--auto` flag skips user confirmation so the loop runs unattended.
-
 **Wait for idea-iter to complete.** It will implement code, commit, and launch the experiment.
 
-### 2c: Wait for experiment to finish
+**If NUM_GPUS > 1** (parallel):
+
+Launch up to `NUM_GPUS` idea-iter calls. For each idea, invoke:
+```
+skill: "idea-iter"
+args: "--auto <IDEA_N>"
+```
+
+Each idea-iter creates a separate branch and launches on a different GPU. Launch them one at a time (each idea-iter needs to finish its code changes before the next one starts, since they share the working directory).
+
+### 3c: Wait for experiments to finish
 
 Poll for completion every 5 minutes:
 
@@ -86,29 +117,25 @@ Poll for completion every 5 minutes:
 python -m research_agent.state read
 ```
 
-Check if the latest iteration's status is still `"running"`. If yes, wait:
+Check if any iteration's status is still `"running"`. If yes, wait:
 
 ```bash
 sleep 300
 ```
 
-Repeat until status changes to `"completed"` or `"failed"`.
+Repeat until all running iterations change to `"completed"` or `"failed"`.
 
-Also check wall-clock time — if `--max-hours` exceeded, stop the loop.
+Check wall-clock time — if `MAX_HOURS` exceeded, stop the loop.
 
-### 2d: Collect results
+### 3d: Collect results
 
-```bash
-python -m research_agent.state read
-```
-
-Read the latest iteration's metrics and feedback. If the experiment used a checkpoint directory, check for results:
+For each iteration that just finished:
 
 ```bash
 python -m research_agent.deploy status --output-dir <CHECKPOINT>
 ```
 
-If the experiment completed successfully, record metrics:
+If completed successfully, extract metrics and record:
 ```bash
 python -m research_agent.state complete-iteration --id <ITER_ID> \
   --metric-name <PRIMARY_METRIC> --metric-value <VALUE> \
@@ -121,17 +148,31 @@ python -m research_agent.state fail-iteration --id <ITER_ID> \
   --feedback "<what went wrong>"
 ```
 
-### 2e: Evaluate and decide
+Commit results for each iteration:
+```bash
+git checkout iter/<ID>-*
+python -m research_agent.git_ops commit-results --iteration <ID> --state state.json
+python -m research_agent.git_ops push
+```
 
-After recording results, check:
+If any iteration is the new best, merge to main:
+```bash
+python -m research_agent.git_ops merge-best --state state.json
+python -m research_agent.git_ops push
+git checkout main
+```
 
-- **Goal reached?** If the primary metric meets or exceeds the goal → stop the loop, go to Phase 3.
-- **Budget exhausted?** If iteration count or wall-clock hours exceeded → stop, go to Phase 3.
-- **Otherwise** → loop back to 2a with updated state.
+### 3e: Evaluate and decide
+
+After recording all results, check:
+
+- **Goal reached?** If the primary metric meets or exceeds the goal → stop the loop, go to Phase 4.
+- **Budget exhausted?** If iteration count or wall-clock hours exceeded → stop, go to Phase 4.
+- **Otherwise** → loop back to 3a with updated state. Use learnings from this batch to formulate the next batch.
 
 ---
 
-## Phase 3: Final Report
+## Phase 4: Final Report
 
 After the loop ends, generate a full report:
 
@@ -181,5 +222,6 @@ python -m research_agent.git_ops push
 - Commit and push after every iteration (idea-iter handles this).
 - If an iteration fails, do not retry the same thing — pivot.
 - Poll with `sleep 300` (5 min) between checks. Do not poll more frequently.
-- Stop if wall-clock time exceeds `--max-hours` even mid-iteration.
+- Stop if wall-clock time exceeds `MAX_HOURS` even mid-iteration.
+- With multiple GPUs, launch up to `NUM_GPUS` experiments per batch. Wait for the full batch to finish before starting the next.
 - Always present the final report, even if stopped early.
