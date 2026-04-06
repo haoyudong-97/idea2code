@@ -19,6 +19,7 @@ Turn a research idea into running code. One command, one experiment.
 You describe an idea. The agent:
 - Finds relevant papers to inform the implementation
 - Reads your codebase to understand the architecture
+- Discusses the plan with you before writing any code
 - Makes surgical code edits to implement your idea
 - Commits, pushes, and launches the experiment
 - Returns immediately so you can start the next idea
@@ -35,11 +36,12 @@ npx idea2code
 
 ```bash
 git clone https://github.com/haoyudong-97/idea2code.git /tmp/idea2code && \
-  rm -rf ~/.claude/skills/idea-iter ~/.claude/skills/check-experiments ~/.claude/skills/combine-findings && \
+  rm -rf ~/.claude/skills/idea-iter ~/.claude/skills/check-experiments ~/.claude/skills/combine-findings ~/.claude/skills/auto-loop && \
   cp -r /tmp/idea2code/skill/idea-iter ~/.claude/skills/ && \
   cp -r /tmp/idea2code/skill/check-experiments ~/.claude/skills/ && \
   cp -r /tmp/idea2code/skill/combine-findings ~/.claude/skills/ && \
-  for s in idea-iter check-experiments combine-findings; do \
+  cp -r /tmp/idea2code/skill/auto-loop ~/.claude/skills/ && \
+  for s in idea-iter check-experiments combine-findings auto-loop; do \
     cp -r /tmp/idea2code/skill/research_agent ~/.claude/skills/$s/; \
   done && \
   rm -rf /tmp/idea2code && \
@@ -55,41 +57,55 @@ git clone https://github.com/haoyudong-97/idea2code.git /tmp/idea2code && \
 ### Uninstall
 
 ```bash
-rm -rf ~/.claude/skills/idea-iter ~/.claude/skills/check-experiments ~/.claude/skills/combine-findings
+rm -rf ~/.claude/skills/idea-iter ~/.claude/skills/check-experiments ~/.claude/skills/combine-findings ~/.claude/skills/auto-loop
 ```
 
-## Usage
+## Skills
 
-```bash
-cd your-project && claude
-```
+| Command | What it does |
+|---------|-------------|
+| `/idea-iter <idea>` | Implement one idea → papers → discuss → code → launch experiment |
+| `/idea-iter --auto <idea>` | Same but skips confirmation — launches directly |
+| `/check-experiments` | Check running experiments, collect results, suggest next steps |
+| `/combine-findings <input>` | Integrate a paper URL, rough idea, or literature into current work |
+| `/auto-loop <goal>` | Run multiple iterations automatically toward a high-level goal |
 
-```
-/idea-iter try attention gates in the decoder       # idea -> papers -> code -> launch
-/idea-iter --auto increase batch size to 4          # skip confirmation, launch directly
-/check-experiments                                   # collect results when training finishes
-/combine-findings https://arxiv.org/abs/2401...      # integrate a specific paper
-/auto-loop improve accuracy --iterations 5           # run 5 iterations hands-free
-```
+### /idea-iter
 
-Run multiple iterations in parallel — each gets its own git branch and checkpoint:
+The core skill. Give it a specific idea or a vague direction:
 
 ```
-/idea-iter add attention gates to decoder        -> iter 1 launched
-/idea-iter increase batch size to 4              -> iter 2 launched
-/idea-iter try cosine annealing schedule         -> iter 3 launched
-
-/check-experiments                               -> collects all finished results
+/idea-iter add attention gates to decoder skip connections    # specific → skips paper search
+/idea-iter improve model generalization                       # exploratory → searches papers first
 ```
+
+It always discusses the plan with you before implementing (unless `--auto`).
+
+### /auto-loop
+
+Hands-free mode. Give a high-level goal, and it runs repeated iterations:
+
+```
+/auto-loop improve segmentation on small organs
+```
+
+It asks you upfront:
+1. How many GPUs? (each runs a different iteration in parallel)
+2. Stop by time or iterations? ("run for 12 hours" or "run 5 iterations")
+3. Any constraints? ("only try attention-based methods")
+
+Then it loops: formulate ideas → implement → launch → wait → collect results → formulate next ideas. All iterations stay focused on your goal. Running experiments are never killed — when the limit is reached, it waits for them to finish before reporting.
 
 ## How It Works
 
 ```
 Your idea
     ↓
-Find relevant papers (arXiv API + WebSearch, top 10 with full text)
+Classify: specific or exploratory?
     ↓
-Read your codebase, understand the architecture
+(exploratory only) Find relevant papers — arXiv API + WebSearch
+    ↓
+Discuss plan with you
     ↓
 Implement the idea (surgical code edits via Agent)
     ↓
@@ -100,7 +116,7 @@ Launch experiment (GPU-aware, local or remote SSH)
 Return immediately — start next idea
 ```
 
-`state.json` and `progress.md` track all iterations, metrics, and results automatically.
+`state.json` and `progress.md` track all iterations, metrics, and results. Each iteration records its method, results, and learnings.
 
 ## License
 
