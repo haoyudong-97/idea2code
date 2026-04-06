@@ -58,7 +58,7 @@ If no state exists:
 python -m research_agent.state init --goal "$direction" --metric "improvement"
 ```
 
-Note: `GOAL`, `BASELINE`, `BEST`, `COMPLETED_ITERS`, `PRIMARY_METRIC`.
+Note: `GOAL`, `BASELINE`, `BEST`, `PRIMARY_METRIC`, and how many iterations already exist. The loop continues from where previous iterations left off — if 3 iterations already ran, the loop starts at iteration 4.
 
 Check GPU availability:
 ```bash
@@ -167,7 +167,7 @@ After recording all results, check:
 
 - **Goal reached?** If the primary metric meets or exceeds the goal → stop the loop, go to Phase 4.
 - **Limit reached?**
-  - If `STOP_MODE` is "iters" and total iterations >= `LIMIT` → stop, go to Phase 4.
+  - If `STOP_MODE` is "iters" and iterations launched by this loop >= `LIMIT` → stop, go to Phase 4.
   - If `STOP_MODE` is "time" and wall-clock hours >= `LIMIT` → do NOT launch new iterations, but wait for any running experiments to finish and collect their results. Then go to Phase 4.
 - **Otherwise** → loop back to 3a with updated state. Use learnings from this batch to formulate the next batch.
 
