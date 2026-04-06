@@ -37,11 +37,12 @@ Before starting, ask the user these questions. **Wait for answers before proceed
 > Before I start the autonomous loop, I need a few details:
 >
 > 1. **How many GPUs can I use?** (e.g., 1, 2, 4 — each GPU runs a different iteration simultaneously)
-> 2. **How many hours should I run?** (e.g., 6, 12, 24 — I'll stop after this, even mid-iteration)
-> 3. **Max iterations?** (e.g., 5, 10, 20 — or "until goal reached")
-> 4. **Any constraints?** (e.g., "don't change the data loader", "only try attention-based methods")
+> 2. **Stop by time or by iterations?**
+>    - **By time:** "run for 12 hours" — I'll keep launching iterations until the time is up
+>    - **By iterations:** "run 5 iterations" — I'll stop after exactly N iterations
+> 3. **Any constraints?** (e.g., "don't change the data loader", "only try attention-based methods")
 
-Store the answers as: `NUM_GPUS`, `MAX_HOURS`, `MAX_ITERS`, `CONSTRAINTS`.
+Store the answers as: `NUM_GPUS`, `STOP_MODE` ("time" or "iters"), `LIMIT` (hours or iteration count), `CONSTRAINTS`.
 
 ---
 
@@ -165,8 +166,9 @@ git checkout main
 After recording all results, check:
 
 - **Goal reached?** If the primary metric meets or exceeds the goal → stop the loop, go to Phase 4.
-- **Iteration limit reached?** If total iterations >= `MAX_ITERS` → stop, go to Phase 4.
-- **Time limit reached?** If wall-clock hours >= `MAX_HOURS` → do NOT launch new iterations, but wait for any running experiments to finish and collect their results. Then go to Phase 4.
+- **Limit reached?**
+  - If `STOP_MODE` is "iters" and total iterations >= `LIMIT` → stop, go to Phase 4.
+  - If `STOP_MODE` is "time" and wall-clock hours >= `LIMIT` → do NOT launch new iterations, but wait for any running experiments to finish and collect their results. Then go to Phase 4.
 - **Otherwise** → loop back to 3a with updated state. Use learnings from this batch to formulate the next batch.
 
 ---
@@ -221,6 +223,6 @@ python -m research_agent.git_ops push
 - Commit and push after every iteration (idea-iter handles this).
 - If an iteration fails, do not retry the same thing — pivot.
 - Poll with `sleep 300` (5 min) between checks. Do not poll more frequently.
-- When `MAX_HOURS` is reached, stop launching new iterations but always wait for running experiments to finish and collect their results.
+- When the limit is reached (time or iterations), stop launching new iterations but always wait for running experiments to finish and collect their results.
 - With multiple GPUs, launch `NUM_GPUS` different iterations simultaneously. Wait for the full batch to finish before starting the next batch.
 - Always present the final report, even if stopped early.
