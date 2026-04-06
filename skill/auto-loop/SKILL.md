@@ -123,7 +123,7 @@ sleep 300
 
 Repeat until ALL running iterations in this batch change to `"completed"` or `"failed"`.
 
-Check wall-clock time — if `MAX_HOURS` exceeded, stop the loop.
+Always wait for running experiments to finish — never kill a running experiment.
 
 ### 3d: Collect results
 
@@ -165,7 +165,8 @@ git checkout main
 After recording all results, check:
 
 - **Goal reached?** If the primary metric meets or exceeds the goal → stop the loop, go to Phase 4.
-- **Budget exhausted?** If iteration count or wall-clock hours exceeded → stop, go to Phase 4.
+- **Iteration limit reached?** If total iterations >= `MAX_ITERS` → stop, go to Phase 4.
+- **Time limit reached?** If wall-clock hours >= `MAX_HOURS` → do NOT launch new iterations, but wait for any running experiments to finish and collect their results. Then go to Phase 4.
 - **Otherwise** → loop back to 3a with updated state. Use learnings from this batch to formulate the next batch.
 
 ---
@@ -220,6 +221,6 @@ python -m research_agent.git_ops push
 - Commit and push after every iteration (idea-iter handles this).
 - If an iteration fails, do not retry the same thing — pivot.
 - Poll with `sleep 300` (5 min) between checks. Do not poll more frequently.
-- Stop if wall-clock time exceeds `MAX_HOURS` even mid-iteration.
+- When `MAX_HOURS` is reached, stop launching new iterations but always wait for running experiments to finish and collect their results.
 - With multiple GPUs, launch `NUM_GPUS` different iterations simultaneously. Wait for the full batch to finish before starting the next batch.
 - Always present the final report, even if stopped early.
