@@ -9,7 +9,7 @@ const SKILL_SRC = join(__dirname, '..', 'skill');
 // Claude Code skill directory
 const CLAUDE_SKILLS_DIR = join(homedir(), '.claude', 'skills');
 
-const SKILLS = ['idea-iter', 'check-experiments', 'combine-findings'];
+const SKILLS = ['idea-iter', 'check-experiments', 'combine-findings', 'auto-loop'];
 
 function detectClaudeCode() {
   const claudeDir = join(homedir(), '.claude');
@@ -67,6 +67,7 @@ function installSkills() {
   console.log('    /idea-iter <your idea>          — idea -> papers -> code -> launch');
   console.log('    /check-experiments               — collect results from running experiments');
   console.log('    /combine-findings <input>        — integrate a paper/idea into current work');
+  console.log('    /auto-loop <direction>           — run multiple iterations automatically');
   console.log('');
   console.log('  Quick start:');
   console.log('    cd /path/to/your/project && claude');
@@ -111,6 +112,7 @@ function showHelp() {
     /idea-iter <idea>          Idea -> papers -> code -> launch experiment
     /check-experiments         Check running experiments, collect results
     /combine-findings <input>  Integrate a paper/idea into current work
+    /auto-loop <direction>     Run multiple iterations hands-free
 
   Learn more: https://github.com/haoyudong-97/idea2code
 `);

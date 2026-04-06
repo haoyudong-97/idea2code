@@ -69,6 +69,7 @@ cd your-project && claude
 /idea-iter --auto increase batch size to 4          # skip confirmation, launch directly
 /check-experiments                                   # collect results when training finishes
 /combine-findings https://arxiv.org/abs/2401...      # integrate a specific paper
+/auto-loop improve accuracy --iterations 5           # run 5 iterations hands-free
 ```
 
 Run multiple iterations in parallel — each gets its own git branch and checkpoint:
