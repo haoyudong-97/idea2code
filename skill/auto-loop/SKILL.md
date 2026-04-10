@@ -7,7 +7,7 @@ arguments: direction
 disable-model-invocation: false
 version: "1.0.0"
 effort: high
-allowed-tools: Bash(python -m research_agent:*), Bash(test:*), Bash(git diff:*), Bash(git add:*), Bash(git commit:*), Bash(git branch:*), Bash(git checkout:*), Bash(sleep:*), Read, Grep, WebFetch(domain:arxiv.org), WebFetch(domain:semanticscholar.org), WebSearch, Agent, Skill
+allowed-tools: Bash(python -m research_agent:*), Bash(test:*), Bash(git diff:*), Bash(git add:*), Bash(git commit:*), Bash(git branch:*), Bash(git checkout:*), Bash(sleep:*), Read, Grep, WebFetch(domain:arxiv.org), WebFetch(domain:semanticscholar.org), WebSearch, Agent, Skill, AskUserQuestion
 ---
 
 # Auto-Loop: Hands-Free Research Iterations
@@ -30,19 +30,44 @@ export PYTHONPATH="$HOME/.claude/skills/auto-loop:$PYTHONPATH"
 
 ## Phase 1: Ask Setup Questions
 
-Before starting, ask the user these questions. **Wait for answers before proceeding.**
+Before starting, you MUST use the `AskUserQuestion` tool to collect setup details. Do NOT ask via plain text — always use the tool so the user gets selectable options. Ask these three questions in a single `AskUserQuestion` call (the tool supports multiple questions at once):
 
-> **Research direction:** $direction
->
-> Before I start the autonomous loop, I need a few details:
->
-> 1. **How many GPUs can I use?** (e.g., 1, 2, 4 — each GPU runs a different iteration simultaneously)
-> 2. **Stop by time or by iterations?**
->    - **By time:** "run for 12 hours" — I'll keep launching iterations until the time is up
->    - **By iterations:** "run 5 iterations" — I'll stop after exactly N iterations
-> 3. **Any constraints?** (e.g., "don't change the data loader", "only try attention-based methods")
+1. **How many GPUs can I use?**
+   - Header: "GPUs"
+   - Question: "How many GPUs can I use? Each runs a different iteration simultaneously."
+   - Multi-select: false
+   - Options:
+     - "1" — "1 GPU — sequential iterations"
+     - "2" — "2 GPUs — 2 iterations in parallel"
+     - "4" — "4 GPUs — 4 iterations in parallel"
+     - "8" — "8 GPUs — 8 iterations in parallel"
+     - "Other" — "I'll specify a different number"
+
+2. **Stop by time or by iterations?**
+   - Header: "Stop mode"
+   - Question: "When should the loop stop?"
+   - Multi-select: false
+   - Options:
+     - "6 hours" — "Run for 6 hours, then stop launching new iterations"
+     - "12 hours" — "Run for 12 hours, then stop launching new iterations"
+     - "24 hours" — "Run for 24 hours, then stop launching new iterations"
+     - "5 iterations" — "Stop after exactly 5 new iterations"
+     - "10 iterations" — "Stop after exactly 10 new iterations"
+     - "Other" — "I'll specify a different limit"
+
+3. **Any constraints?**
+   - Header: "Constraints"
+   - Question: "Any constraints on what to try? (Optional — pick one or describe)"
+   - Multi-select: false
+   - Options:
+     - "None" — "No constraints, try anything"
+     - "No data changes" — "Don't modify the data loader or augmentation"
+     - "No architecture changes" — "Only tune hyperparameters and training tricks"
+     - "Other" — "I'll describe my own constraints"
 
 Store the answers as: `NUM_GPUS`, `STOP_MODE` ("time" or "iters"), `LIMIT` (hours or iteration count), `CONSTRAINTS`.
+
+If the user picks "Other" for any question, ask a follow-up plain-text question for that specific field.
 
 ---
 
@@ -197,34 +222,4 @@ Present to the user:
 ### Iteration Summary
 | # | Idea | Result | Delta | Learnings |
 |---|------|--------|-------|-----------|
-| 1 | ...  | ...    | ...   | ...       |
-
-### What worked
-- <patterns from successful iterations>
-
-### What didn't work
-- <patterns from failed/regressed iterations>
-
-### Suggested next steps
-- <based on the trajectory of results>
-```
-
-If the best iteration hasn't been merged to main yet:
-```bash
-python -m research_agent.git_ops merge-best --state state.json
-python -m research_agent.git_ops push
-```
-
----
-
-## Rules
-
-- Always use `--auto` when invoking `/idea-iter` so the loop runs unattended.
-- Each iteration must be a different idea — do not repeat the same change.
-- Use learnings from previous iterations to inform the next one.
-- Commit and push after every iteration (idea-iter handles this).
-- If an iteration fails, do not retry the same thing — pivot.
-- Poll with `sleep 300` (5 min) between checks. Do not poll more frequently.
-- When the limit is reached (time or iterations), stop launching new iterations but always wait for running experiments to finish and collect their results.
-- With multiple GPUs, launch `NUM_GPUS` different iterations simultaneously. Wait for the full batch to finish before starting the next batch.
-- Always present the final report, even if stopped early.
+| 1 | ...  | ...    | ...   | ...  
