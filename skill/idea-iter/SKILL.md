@@ -37,10 +37,12 @@ export PYTHONPATH="$HOME/.claude/skills/idea-iter:$PYTHONPATH"
 To dispatch a phase as a background agent:
 
 ```bash
-claude --bg "<PROMPT>" 2>&1 | grep "backgrounded" | awk '{print $NF}'
+claude --bg --dangerously-skip-permissions "<PROMPT>" 2>&1 | grep "backgrounded" | awk '{print $NF}'
 ```
 
 This returns the session ID (e.g., `a1b2c3d4`). Store it as `SESSION_ID`.
+
+**`--dangerously-skip-permissions` is required.** Without it, bg sessions block on interactive permission prompts with no terminal to answer them.
 
 ### Waiting for completion
 
@@ -166,7 +168,7 @@ No paper search needed. Formulate directly:
 Dispatch a background agent to search for papers and generate ideas:
 
 ```bash
-claude --bg "You are a research paper search agent working in $(pwd).
+claude --bg --dangerously-skip-permissions "You are a research paper search agent working in $(pwd).
 
 export PYTHONPATH=\"\$HOME/.claude/skills/idea-iter:\$PYTHONPATH\"
 
@@ -259,7 +261,7 @@ python -m research_agent.state start-iteration \
 Now dispatch the implementation agent. The agent works in the project directory on the current branch:
 
 ```bash
-claude --bg "You are implementing a code change in $(pwd).
+claude --bg --dangerously-skip-permissions "You are implementing a code change in $(pwd).
 You are on branch $(git rev-parse --abbrev-ref HEAD).
 
 ## First: Read progress.md
@@ -341,7 +343,7 @@ Pick a unique checkpoint directory (e.g., `checkpoints/iter_<NEXT_ITER>`).
 Dispatch the launch agent:
 
 ```bash
-claude --bg "You are launching an experiment in $(pwd).
+claude --bg --dangerously-skip-permissions "You are launching an experiment in $(pwd).
 
 export PYTHONPATH=\"\$HOME/.claude/skills/idea-iter:\$PYTHONPATH\"
 
